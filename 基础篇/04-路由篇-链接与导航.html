@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 04 节 · 路由篇 | 链接与导航 — Next.js 开发指南</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b1220'/%3E%3Cpath d='M16 6l10 17.5H6z' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0a0f1a; --bg2:#0e1626; --panel:#111b2e; --panel2:#0c1424;
+  --line:#1e2a40; --line2:#2a3a55;
+  --text:#d9e2f1; --muted:#8b9bb8; --dim:#5f6e8c;
+  --accent:#38bdf8; --accent2:#a78bfa; --accent-dim:rgba(56,189,248,.13);
+  --ok:#34d399; --warn:#fbbf24; --err:#f87171;
+  --k:#c678dd; --s:#98c379; --c:#64748b; --fn:#61afef; --n:#d19a66;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.75;font-size:15px;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ===== 顶栏 ===== */
+.topbar{position:fixed;top:0;left:0;right:0;height:54px;z-index:50;display:flex;align-items:center;gap:12px;padding:0 12px;background:rgba(10,15,26,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14.5px;color:var(--text);text-decoration:none;min-width:0}
+.brand svg{flex:none}
+.brand .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar .right{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
+.iconbtn{width:40px;height:40px;border-radius:10px;border:1px solid var(--line2);background:transparent;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.iconbtn:hover{color:var(--text);border-color:var(--accent)}
+.badge{font-size:12px;border:1px solid var(--line2);padding:3px 11px;border-radius:999px;color:var(--muted);white-space:nowrap}
+@media(min-width:1024px){.iconbtn.tocbtn{display:none}}
+
+/* ===== 侧边栏（本书目录 TOC） ===== */
+.sidebar{position:fixed;top:54px;bottom:0;left:0;width:302px;background:var(--bg2);border-right:1px solid var(--line);overflow-y:auto;z-index:40;transform:translateX(-106%);transition:transform .24s ease;padding:14px 12px 50px}
+.sidebar.open{transform:none}
+@media(min-width:1024px){.sidebar{transform:none}.main{margin-left:302px}}
+.sgtit{font-size:12.5px;color:var(--dim);letter-spacing:.1em;padding:6px 10px 4px;text-transform:uppercase;display:flex;justify-content:space-between}
+.sgrp{margin:4px 0 16px}
+.sgrp-h{font-size:12.5px;letter-spacing:.06em;color:var(--dim);padding:8px 10px 6px;display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:6px}
+.slink{display:flex;gap:9px;align-items:baseline;padding:6px 10px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:13px;line-height:1.45}
+.slink:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.slink .n{flex:none;font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+.slink.on{background:var(--accent-dim);color:var(--accent)}
+.slink.on .n{color:var(--accent)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:35;opacity:0;pointer-events:none;transition:opacity .24s}
+.overlay.show{opacity:1;pointer-events:auto}
+
+/* ===== 正文 ===== */
+.main{padding-top:54px;min-height:100vh}
+.content{max-width:880px;margin:0 auto;padding:26px 18px 90px}
+@media(min-width:768px){.content{padding:40px 34px 110px}}
+.hero{padding:20px 0 20px;border-bottom:1px solid var(--line);margin-bottom:24px}
+.chip{display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.12em;color:var(--accent);border:1px solid var(--line2);border-radius:999px;padding:3px 12px;margin-bottom:14px}
+h1{font-size:clamp(1.5rem,4vw,2.1rem);line-height:1.35;letter-spacing:.01em;color:#f2f6fc}
+.sub{color:var(--muted);margin-top:10px;font-size:15px}
+.meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;font-size:12.5px;color:var(--dim);font-family:var(--mono)}
+
+.inctoc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin:0 0 30px}
+.inctoc h3{font-size:12.5px;color:var(--muted);letter-spacing:.08em;margin-bottom:10px}
+.inctoc ol{list-style:none;display:grid;gap:5px}
+.inctoc a{color:var(--accent);text-decoration:none;font-size:14px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inctoc a:hover{text-decoration:underline}
+
+.article{counter-reset:sec}
+.article h2{font-size:1.3rem;margin:3.2rem 0 1rem;padding-left:14px;border-left:3px solid var(--accent);counter-increment:sec;counter-reset:sub;scroll-margin-top:70px;color:#eef3fc}
+.article h2::before{content:counter(sec,decimal-leading-zero);font-family:var(--mono);font-size:.78em;color:var(--accent);margin-right:10px;vertical-align:2px}
+.article h3{font-size:1.07rem;margin:1.9rem 0 .75rem;counter-increment:sub;color:#e4ebf7;scroll-margin-top:70px}
+.article h3::before{content:counter(sec) "." counter(sub);font-family:var(--mono);font-size:.82em;color:var(--accent2);margin-right:10px}
+.article h4{font-size:.99rem;margin:1.4rem 0 .6rem;color:#dbe6f7}
+.article p{margin:0 0 1rem;color:var(--text)}
+.article ul,.article ol{margin:0 0 1.1rem 1.5em}
+.article li{margin:.35em 0}
+.article strong{color:#fff}
+.article em{color:var(--muted)}
+.article a{color:#7dd3fc;text-decoration:none;border-bottom:1px solid rgba(125,211,252,.35)}
+.article a:hover{border-bottom-color:#7dd3fc}
+code.inline{font-family:var(--mono);font-size:.88em;background:#111b2e;border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:#9ad6ff;white-space:nowrap}
+
+.tipq{border:1px solid var(--line2);border-left:3px solid var(--accent2);background:var(--panel);padding:12px 16px;border-radius:10px;margin:0 0 1.1rem;color:var(--muted)}
+
+/* ===== 折叠块 ===== */
+details.box{border:1px solid var(--line);border-radius:12px;background:var(--panel);margin:0 0 1rem;overflow:hidden}
+details.box>summary{cursor:pointer;padding:12px 16px;font-weight:600;font-size:14.5px;display:flex;align-items:center;gap:10px;list-style:none;user-select:none;min-height:46px}
+details.box>summary::-webkit-details-marker{display:none}
+details.box>summary::before{content:"";width:8px;height:8px;border-radius:2px;flex:none}
+details.box.note>summary::before{background:var(--accent)}
+details.box.tip>summary::before{background:var(--ok)}
+details.box.warn>summary::before{background:var(--warn)}
+details.box.best>summary::before{background:var(--accent2)}
+details.box .chev{margin-left:auto;color:var(--dim);font-size:12px;transition:transform .2s}
+details.box[open] .chev{transform:rotate(90deg)}
+details.box .bd{padding:2px 16px 14px;border-top:1px solid var(--line);padding-top:10px}
+details.box .bd p:last-child{margin-bottom:0}
+
+/* ===== 代码块 ===== */
+.codeblock{margin:0 0 1.2rem;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0b1220}
+.codehead{display:flex;align-items:center;gap:10px;padding:7px 14px;background:#0e1626;border-bottom:1px solid var(--line);font-size:12.5px}
+.filename{font-family:var(--mono);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.copybtn{margin-left:auto;background:none;border:1px solid var(--line2);color:var(--muted);border-radius:7px;padding:3px 12px;font-size:12px;cursor:pointer;min-height:28px;flex:none}
+.copybtn:hover{color:var(--text);border-color:var(--accent)}
+pre.code{padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.65;color:#c9d4e8;tab-size:2}
+pre.code code{font-family:inherit;background:none;color:inherit;padding:0;border:0;display:block}
+.hl-k{color:var(--k)} .hl-s{color:var(--s)} .hl-c{color:var(--c);font-style:italic} .hl-f{color:var(--fn)} .hl-n{color:var(--n)} .hl-t{color:#e06c75}
+
+/* ===== 表格 ===== */
+.tbl{width:100%;border-collapse:collapse;margin:0 0 1.3rem;font-size:13.5px;table-layout:fixed}
+.tbl th{background:#101a2c;color:#dbe6f7;font-weight:600;text-align:left;padding:9px 12px;border:1px solid var(--line2);font-size:13px}
+.tbl td{padding:8px 12px;border:1px solid var(--line);color:var(--text);vertical-align:top;word-break:break-word}
+.tbl tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+.tbl caption{caption-side:top;text-align:left;color:var(--muted);font-size:13px;padding-bottom:8px}
+
+/* ===== 流程图（机制示意） ===== */
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:1.1rem 0 1.3rem;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.fnode{flex:none;max-width:100%;padding:8px 14px;border:1px solid var(--accent);color:var(--accent);background:var(--accent-dim);border-radius:8px;font-size:13px;font-weight:600;text-align:center}
+.fnode.dim{border-color:var(--line2);color:var(--muted);background:none}
+.fnode.sm{font-size:12px;padding:5px 10px;font-weight:500}
+.farrow{flex:none;color:var(--dim);font-family:var(--mono);padding:0 2px}
+.flow.col{flex-direction:column;align-items:stretch}
+.flow.col .fnode{width:100%}
+.flow.col .farrow{text-align:center;padding:2px 0}
+
+/* ===== 参考链接 ===== */
+.sources{margin-top:3rem;border-top:1px solid var(--line);padding-top:1.4rem}
+.sources h2{margin-top:0}
+.sources ol{list-style:decimal;margin-left:1.5em}
+.sources li{margin:.55em 0;font-size:14px;color:var(--muted)}
+.sources li a{color:#7dd3fc;text-decoration:none}
+.sources li a:hover{text-decoration:underline}
+.tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;margin-right:7px;vertical-align:1px;border:1px solid var(--line2);color:var(--muted);letter-spacing:.04em}
+.tag.official{color:var(--ok);border-color:rgba(52,211,153,.42)}
+.tag.blog{color:var(--accent2);border-color:rgba(167,139,250,.42)}
+.tag.gh{color:var(--warn);border-color:rgba(251,191,36,.42)}
+
+/* ===== 上一节/下一节 ===== */
+.pager{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:3rem;border-top:1px solid var(--line);padding-top:1.3rem}
+.pager a{display:block;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;text-decoration:none;color:var(--text)}
+.pager a:hover{border-color:var(--accent)}
+.pager .dir{font-size:11.5px;color:var(--dim);letter-spacing:.08em}
+.pager .tt{font-size:14px;margin-top:4px;color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:640px){.pager{grid-template-columns:1fr}}
+
+.totop{position:fixed;right:18px;bottom:18px;width:42px;height:42px;border-radius:10px;background:var(--panel);border:1px solid var(--line2);color:var(--muted);cursor:pointer;z-index:30;opacity:0;pointer-events:none;transition:opacity .2s;font-size:15px}
+.totop.show{opacity:1;pointer-events:auto}
+.totop:hover{color:var(--text);border-color:var(--accent)}
+
+.foot{padding:24px 20px 70px;text-align:center;color:var(--dim);font-size:12.5px;border-top:1px solid var(--line);margin-top:1.5rem}
+.foot a{color:var(--muted)}
+</style>
+</head>
+<body data-current-file="04-路由篇-链接与导航.html">
+
+<header class="topbar">
+  <a class="brand" href="../../index.html" title="返回总目录">
+    <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 6l10 17.5H6z" fill="none" stroke="#38bdf8" stroke-width="2.4" stroke-linejoin="round"/></svg>
+    <span class="t">Next.js 开发指南 · 完整重制版</span>
+  </a>
+  <div class="right">
+    <span class="badge" id="chapBadge">基础篇</span>
+    <button class="iconbtn" id="foldAll" title="展开/收起全部折叠块">⤢</button>
+    <button class="iconbtn tocbtn" id="tocToggle" title="目录导航" aria-label="打开目录导航">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    </button>
+  </div>
+</header>
+
+<nav class="sidebar" id="sidebar" aria-label="本书目录"></nav>
+<div class="overlay" id="overlay"></div>
+
+<main class="main">
+  <article class="content">
+
+    <header class="hero">
+      <span class="chip">第 04 节 · 共 82 节</span>
+      <h1>路由篇 | 链接与导航</h1>
+      <p class="sub">next/link 的客户端导航、useRouter 编程式跳转、prefetch 与 RSC Payload 的工作方式。</p>
+      <div class="meta"><span>篇章：基础篇</span><span>主题：Link / useRouter</span><span>对应小册第 04 节</span></div>
+    </header>
+
+    <nav class="inctoc" id="inctoc" aria-label="本节目录"><h3>本节目录</h3><ol></ol></nav>
+
+    <div class="article">
+
+      <h2>概念与背景</h2>
+      <p>在传统多页应用里，点击链接意味着浏览器整页刷新：重新下载 HTML、重建 DOM（Document Object Model）、重新水合（Hydration）整个 React 应用。Next.js 提供<strong>客户端导航（Client-side Navigation）</strong>：点击 <code class="inline">&lt;Link&gt;</code> 后不刷新页面，而是在浏览器端切换路由、按需拉取新段所需的数据，体验接近单页应用（Single-Page Application，SPA），同时保留服务端渲染的好处。</p>
+      <p>App Router 下客户端导航的核心是 <strong>RSC Payload（React Server Components 负载）</strong>：切换路由时，服务端并不会返回完整 HTML，而是返回一份精简的「服务端组件渲染指令流」（RSC Payload），客户端把它与已有的客户端组件树合并，只更新变化的部分。</p>
+      <div class="flow" role="img" aria-label="客户端导航流程：点击 Link → 请求 RSC Payload → 合并组件树 → 更新 URL 与视图">
+        <div class="fnode">用户点击 Link</div>
+        <div class="farrow">→</div>
+        <div class="fnode">浏览器请求目标路由<br>的 RSC Payload</div>
+        <div class="farrow">→</div>
+        <div class="fnode">客户端合并组件树<br>保留未变布局状态</div>
+        <div class="farrow">→</div>
+        <div class="fnode">更新 URL 与视图<br>无整页刷新</div>
+      </div>
+
+      <h2>next/link 的 Link 组件</h2>
+      <p><code class="inline">Link</code> 是 App Router 下路由间导航的主要方式，它扩展了原生 <code class="inline">&lt;a&gt;</code>，自动带上 prefetch 与客户端导航能力。基本用法：</p>
+      <div class="codeblock">
+        <div class="codehead"><span class="filename">app/page.tsx</span><button class="copybtn">复制</button></div>
+        <pre class="code"><code>import Link from "next/link";
+
+export default function HomePage() {
+  return (
+    &lt;nav&gt;
+      {/* href 可以是字符串 */}
+      &lt;Link href="/about"&gt;关于我们&lt;/Link&gt;
+
+      {/* 也可以是对象：pathname + query */}
+      &lt;Link
+        href={{ pathname: "/blog", query: { page: "2" } }}
+      &gt;第 2 页&lt;/Link&gt;
+
+      {/* 锚点：直达页面内某个 id */}
+      &lt;Link href="/docs#install"&gt;跳转到安装章节&lt;/Link&gt;
+    &lt;/nav&gt;
+  );
+}</code></pre>
+      </div>
+      <p>原生 <code class="inline">&lt;a&gt;</code> 的属性（<code class="inline">className</code>、<code class="inline">target="_blank"</code> 等）会原样透传给底层 <code class="inline">&lt;a&gt;</code> 标签。</p>
+
+      <h3>Link 的关键 Props</h3>
+      <table class="tbl">
+        <colgroup><col style="width:22%"><col style="width:18%"><col style="width:60%"></colgroup>
+        <caption>&lt;Link&gt; 常用 Props</caption>
+        <thead><tr><th>Prop</th><th>默认值</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code class="inline">href</code></td><td>必填</td><td>要导航到的路径，字符串或 <code class="inline">{ pathname, query, hash }</code> 对象</td></tr>
+          <tr><td><code class="inline">replace</code></td><td><code class="inline">false</code></td><td>为 <code class="inline">true</code> 时替换浏览器历史栈当前项，而不是新增一条（用户点后退回不到来源页）</td></tr>
+          <tr><td><code class="inline">scroll</code></td><td><code class="inline">true</code></td><td>为 <code class="inline">false</code> 时导航后不自动滚动到页面顶部；Next.js 默认会保持可见元素的滚动位置</td></tr>
+          <tr><td><code class="inline">prefetch</code></td><td><code class="inline">null</code>（即 "auto"）</td><td><code class="inline">true</code> 完整预取、<code class="inline">false</code> 不预取、<code class="inline">auto</code> 按静态 / 动态路由自适应</td></tr>
+        </tbody>
+      </table>
+
+      <h2>编程式导航：useRouter</h2>
+      <p>在事件回调（按钮点击、表单提交、登录成功后跳转）里，用 <code class="inline">next/navigation</code> 导出的 <code class="inline">useRouter()</code> 做编程式导航。注意它<strong>只能在客户端组件里用</strong>（组件顶部加 <code class="inline">"use client"</code>）。</p>
+      <div class="codeblock">
+        <div class="codehead"><span class="filename">app/components/LoginButton.tsx</span><button class="copybtn">复制</button></div>
+        <pre class="code"><code>"use client";
+
+import { useRouter } from "next/navigation";
+
+export default function LoginButton() {
+  const router = useRouter();
+
+  return (
+    &lt;button
+      onClick={() =&gt; {
+        // 登录成功后跳转到仪表盘，并保留滚动位置
+        router.push("/dashboard", { scroll: false });
+      }}
+    &gt;
+      登录并进入控制台
+    &lt;/button&gt;
+  );
+}</code></pre>
+      </div>
+
+      <h3>router 对象的方法</h3>
+      <table class="tbl">
+        <colgroup><col style="width:26%"><col style="width:74%"></colgroup>
+        <caption>next/navigation 的 useRouter 返回值</caption>
+        <thead><tr><th>方法</th><th>作用</th></tr></thead>
+        <tbody>
+          <tr><td><code class="inline">router.push(href, opts?)</code></td><td>导航到新路由，并在浏览器历史栈新增一条记录</td></tr>
+          <tr><td><code class="inline">router.replace(href, opts?)</code></td><td>导航但替换历史栈当前项（等价于 Link 的 replace）</td></tr>
+          <tr><td><code class="inline">router.refresh()</code></td><td>用新的服务端请求刷新当前路由，重新拉取服务端组件数据，同时保留客户端状态与滚动位置</td></tr>
+          <tr><td><code class="inline">router.back()</code> / <code class="inline">router.forward()</code></td><td>浏览器历史后退 / 前进</td></tr>
+          <tr><td><code class="inline">router.prefetch(href)</code></td><td>手动预取目标路由，加速后续导航</td></tr>
+        </tbody>
+      </table>
+      <p><code class="inline">push</code> / <code class="inline">replace</code> 的第二个参数支持 <code class="inline">{ scroll: false }</code> 与 <code class="inline">transitionTypes</code>。</p>
+
+      <h3>App Router 与 Pages Router 的 useRouter 区别</h3>
+      <table class="tbl">
+        <colgroup><col style="width:26%"><col style="width:37%"><col style="width:37%"></colgroup>
+        <caption>两个 useRouter 不要混用</caption>
+        <thead><tr><th>能力</th><th>App Router：next/navigation</th><th>Pages Router：next/router</th></tr></thead>
+        <tbody>
+          <tr><td>导入路径</td><td><code class="inline">next/navigation</code> 导出的 <code class="inline">useRouter</code></td><td><code class="inline">next/router</code> 导出的 <code class="inline">useRouter</code></td></tr>
+          <tr><td>路径名 / 查询串</td><td>拆分给 <code class="inline">usePathname()</code>、<code class="inline">useSearchParams()</code> 等独立 Hook</td><td>直接读 <code class="inline">router.pathname</code>、<code class="inline">router.query</code></td></tr>
+          <tr><td>路由事件</td><td>用 <code class="inline">usePathname</code> 等组合监听</td><td><code class="inline">router.events.on(...)</code></td></tr>
+          <tr><td>典型方法</td><td>push / replace / refresh / back / prefetch</td><td>push / replace / prefetch</td></tr>
+        </tbody>
+      </table>
+
+      <h2>prefetch 行为详解</h2>
+      <p>预取（Prefetch）是 <code class="inline">&lt;Link&gt;</code> 进入浏览器视口时自动发起的后台请求，目的是让用户真正点击时路由已经「就绪」。官方文档明确：<strong>prefetch 只在生产环境（production）启用</strong>，开发环境不会预取。</p>
+      <ul>
+        <li><code class="inline">prefetch={null}</code>（默认，即 "auto"）：静态路由完整预取（含数据）；动态路由只预取到最近的 <code class="inline">loading.tsx</code> 边界为止。</li>
+        <li><code class="inline">prefetch={true}</code>：无论静态动态都完整预取。</li>
+        <li><code class="inline">prefetch={false}</code>：完全不预取。</li>
+      </ul>
+      <p>如果预取的数据在用户悬停前过期，Next.js 会在悬停时重新预取一次。</p>
+
+      <details class="box warn"><summary>常见坑<span class="chev">›</span></summary><div class="bd">
+        <ul>
+          <li><strong>在服务端组件里调用 useRouter</strong>：<code class="inline">useRouter</code> 是客户端 Hook，组件顶部必须有 <code class="inline">"use client"</code>，否则运行时报错。</li>
+          <li><strong>混用 next/router 与 next/navigation</strong>：App Router 项目里从 <code class="inline">next/router</code> 导入的 useRouter 拿不到 App Router 的能力（<code class="inline">refresh</code> 等）。</li>
+          <li><strong>向 push 传入不可信 URL</strong>：<code class="inline">javascript:</code> 之类的 URL 会在当前页面上下文执行，带来跨站脚本（Cross-Site Scripting，XSS）风险；不要把用户输入直接塞进 push。</li>
+          <li><strong>期望导航后页面回到顶部却没生效</strong>：Next.js 的滚动策略是「保持可见元素位置」，需要回顶部请确认没有误传 <code class="inline">scroll: false</code>。</li>
+        </ul>
+      </div></details>
+
+      <details class="box best"><summary>最佳实践<span class="chev">›</span></summary><div class="bd">
+        <ol>
+          <li>能声明式用 <code class="inline">&lt;Link&gt;</code> 就不要写 <code class="inline">router.push</code>；官方建议：除非有明确的事件逻辑，否则一律用 Link。</li>
+          <li>首屏重要的导航（顶部导航、主 CTA）保持默认 prefetch，让用户「想点就到」。</li>
+          <li>表单提交后跳转用 <code class="inline">router.push(...) + router.refresh()</code> 的组合：先切路由，再让服务端数据刷新。</li>
+          <li>粘性顶栏场景在 CSS 里设 <code class="inline">scroll-padding-top</code>，避免锚点跳转后内容被顶栏遮住。</li>
+        </ol>
+      </div></details>
+
+
+
+
+      <section class="sources">
+        <h2>参考链接</h2>
+        <ol>
+          <li><span class="tag official">官方</span><a href="https://nextjs.org/docs/app/api-reference/components/link" target="_blank" rel="noopener">Link 组件官方文档</a></li>
+          <li><span class="tag official">官方</span><a href="https://nextjs.org/docs/app/api-reference/functions/use-router" target="_blank" rel="noopener">useRouter（next/navigation）官方文档</a></li>
+          <li><span class="tag official">官方</span><a href="https://nextjs.org/docs/app/getting-started/navigating-between-pages" target="_blank" rel="noopener">Navigating between pages 官方入门</a></li>
+          <li><span class="tag gh">GitHub</span><a href="https://github.com/vercel/next.js/tree/canary/examples" target="_blank" rel="noopener">官方示例仓库（含路由导航示例）</a></li>
+          <li><span class="tag blog">博客</span><a href="https://juejin.cn/book/7307859898316881957" target="_blank" rel="noopener">掘金小册《Next.js 开发指南》（冴羽）—— 本教程目录来源</a></li>
+        </ol>
+      </section>
+
+      <nav class="pager">
+        <a id="pagerPrev" href="../../index.html"><span class="dir">上一节 / 总目录</span><span class="tt">总目录 · 教程首页</span></a>
+        <a id="pagerNext" href="#"><span class="dir">下一节</span><span class="tt"></span></a>
+      </nav>
+    </div>
+  </article>
+</main>
+
+<button class="totop" id="totop" aria-label="回到顶部">↑</button>
+<footer class="foot">Next.js 开发指南 · 完整重制版 —— 内容依据官方文档、社区博客与 GitHub 示例综合编写，仅供学习参考。来源链接见每节「参考链接」。</footer>
+
+<script>
+/* ===== 本书目录数据（82 节，与掘金小册《Next.js 开发指南》目录一致）===== */
+const BOOK_TOC = [
+{n:1,ch:"基础篇",t:"答疑篇 | 学习路线与答疑",f:"01-答疑篇-学习路线与答疑.html"},
+{n:2,ch:"基础篇",t:"初始篇 | Next.js CLI",f:"02-初始篇-Next.js-CLI.html"},
+{n:3,ch:"基础篇",t:"路由篇 | App Router",f:"03-路由篇-App-Router.html"},
+{n:4,ch:"基础篇",t:"路由篇 | 链接与导航",f:"04-路由篇-链接与导航.html"},
+{n:5,ch:"基础篇",t:"路由篇 | 动态路由、路由组、平行路由和拦截路由",f:"05-路由篇-动态路由-路由组-平行路由和拦截路由.html"},
+{n:6,ch:"基础篇",t:"路由篇 | 路由处理程序",f:"06-路由篇-路由处理程序.html"},
+{n:7,ch:"基础篇",t:"路由篇 | 中间件",f:"07-路由篇-中间件.html"},
+{n:8,ch:"基础篇",t:"渲染篇 | 从 CSR、SSR、SSG、ISR 开始说起",f:"08-渲染篇-从CSR-SSR-SSG-ISR开始说起.html"},
+{n:9,ch:"基础篇",t:"渲染篇 | React Server Component 与 SSR",f:"09-渲染篇-React-Server-Component-与-SSR.html"},
+{n:10,ch:"基础篇",t:"渲染篇 | Suspense 与 Streaming",f:"10-渲染篇-Suspense-与-Streaming.html"},
+{n:11,ch:"基础篇",t:"渲染篇 | 服务端组件和客户端组件",f:"11-渲染篇-服务端组件和客户端组件.html"},
+{n:12,ch:"基础篇",t:"渲染篇 | 服务端渲染策略",f:"12-渲染篇-服务端渲染策略.html"},
+{n:13,ch:"基础篇",t:"数据获取篇 | 数据获取、缓存与重新验证",f:"13-数据获取篇-数据获取-缓存与重新验证.html"},
+{n:14,ch:"基础篇",t:"缓存篇 | Caching（上）",f:"14-缓存篇-Caching-上.html"},
+{n:15,ch:"基础篇",t:"缓存篇 | Caching（下）",f:"15-缓存篇-Caching-下.html"},
+{n:16,ch:"基础篇",t:"数据获取篇 | Server Actions（上）",f:"16-数据获取篇-Server-Actions-上.html"},
+{n:17,ch:"基础篇",t:"数据获取篇 | Server Actions（下）",f:"17-数据获取篇-Server-Actions-下.html"},
+{n:18,ch:"基础篇",t:"样式篇 | Tailwind CSS、CSS-in-JS 与 Sass",f:"18-样式篇-Tailwind-CSS-CSS-in-JS-与-Sass.html"},
+{n:19,ch:"基础篇",t:"配置篇 | 环境变量、路径别名与 src 目录",f:"19-配置篇-环境变量-路径别名与-src-目录.html"},
+{n:20,ch:"基础篇",t:"配置篇 | 路由段配置项",f:"20-配置篇-路由段配置项.html"},
+{n:21,ch:"基础篇",t:"组件篇 | Images",f:"21-组件篇-Images.html"},
+{n:22,ch:"基础篇",t:"组件篇 | Font",f:"22-组件篇-Font.html"},
+{n:23,ch:"基础篇",t:"组件篇 | Link 和 Script",f:"23-组件篇-Link-和-Script.html"},
+{n:24,ch:"基础篇",t:"Metadata 篇 | 基于配置",f:"24-Metadata-篇-基于配置.html"},
+{n:25,ch:"基础篇",t:"Metadata 篇 | 基于文件",f:"25-Metadata-篇-基于文件.html"},
+{n:26,ch:"基础篇",t:"优化篇 | 懒加载",f:"26-优化篇-懒加载.html"},
+{n:27,ch:"基础篇",t:"渲染篇 | Edge Runtime",f:"27-渲染篇-Edge-Runtime.html"},
+{n:28,ch:"基础篇",t:"路由篇 | 国际化",f:"28-路由篇-国际化.html"},
+{n:29,ch:"基础篇",t:"配置篇 | TypeScript 和 ESLint",f:"29-配置篇-TypeScript-和-ESLint.html"},
+{n:30,ch:"基础篇",t:"配置篇 | MDX",f:"30-配置篇-MDX.html"},
+{n:31,ch:"基础篇",t:"配置篇 | 草稿模式和内容安全策略",f:"31-配置篇-草稿模式和内容安全策略.html"},
+{n:32,ch:"基础篇",t:"部署篇 | 静态导出",f:"32-部署篇-静态导出.html"},
+{n:33,ch:"基础篇",t:"API 篇 | next.config.js（上）",f:"33-API-篇-next-config-js-上.html"},
+{n:34,ch:"基础篇",t:"API 篇 | next.config.js（下）",f:"34-API-篇-next-config-js-下.html"},
+{n:35,ch:"基础篇",t:"API 篇 | 常用函数与方法（上）",f:"35-API-篇-常用函数与方法-上.html"},
+{n:36,ch:"基础篇",t:"API 篇 | 常用函数与方法（下）",f:"36-API-篇-常用函数与方法-下.html"},
+{n:37,ch:"实战篇",t:"实战篇 | React Notes | 项目介绍与创建",f:"37-实战篇-React-Notes-项目介绍与创建.html"},
+{n:38,ch:"实战篇",t:"实战篇 | React Notes | 侧边栏笔记列表",f:"38-实战篇-React-Notes-侧边栏笔记列表.html"},
+{n:39,ch:"实战篇",t:"实战篇 | React Notes | 笔记预览界面",f:"39-实战篇-React-Notes-笔记预览界面.html"},
+{n:40,ch:"实战篇",t:"实战篇 | React Notes | 笔记编辑界面",f:"40-实战篇-React-Notes-笔记编辑界面.html"},
+{n:41,ch:"实战篇",t:"实战篇 | React Notes | 笔记搜索",f:"41-实战篇-React-Notes-笔记搜索.html"},
+{n:42,ch:"实战篇",t:"实战篇 | React Notes | 国际化",f:"42-实战篇-React-Notes-国际化.html"},
+{n:43,ch:"实战篇",t:"实战篇 | React Notes | 文件上传",f:"43-实战篇-React-Notes-文件上传.html"},
+{n:44,ch:"实战篇",t:"实战篇 | React Notes | next-auth",f:"44-实战篇-React-Notes-next-auth.html"},
+{n:45,ch:"实战篇",t:"实战篇 | React Notes | Strapi",f:"45-实战篇-React-Notes-Strapi.html"},
+{n:46,ch:"实战篇",t:"实战篇 | React Notes | Prisma",f:"46-实战篇-React-Notes-Prisma.html"},
+{n:47,ch:"实战篇",t:"实战篇 | React Notes | 服务器部署",f:"47-实战篇-React-Notes-服务器部署.html"},
+{n:48,ch:"实战篇",t:"实战篇 | React Notes | Docker 快速入门",f:"48-实战篇-React-Notes-Docker-快速入门.html"},
+{n:49,ch:"实战篇",t:"实战篇 | React Notes | Docker 部署",f:"49-实战篇-React-Notes-Docker-部署.html"},
+{n:50,ch:"实战篇",t:"实战篇 | React Notes | Vercel 部署",f:"50-实战篇-React-Notes-Vercel-部署.html"},
+{n:51,ch:"实战篇",t:"实战篇 | 博客 | 快速实现",f:"51-实战篇-博客-快速实现.html"},
+{n:52,ch:"实战篇",t:"实战篇 | 博客 | Contentlayer",f:"52-实战篇-博客-Contentlayer.html"},
+{n:53,ch:"实战篇",t:"实战篇 | 博客 | SEO",f:"53-实战篇-博客-SEO.html"},
+{n:54,ch:"实战篇",t:"实战篇 | 博客 | 深色模式（Dark Mode）",f:"54-实战篇-博客-深色模式-Dark-Mode.html"},
+{n:55,ch:"实战篇",t:"实战篇 | 博客 | i18n",f:"55-实战篇-博客-i18n.html"},
+{n:56,ch:"实战篇",t:"实战篇 | 博客 | 性能分析",f:"56-实战篇-博客-性能分析.html"},
+{n:57,ch:"实战篇",t:"实战篇 | 博客 | 评论系统",f:"57-实战篇-博客-评论系统.html"},
+{n:58,ch:"实战篇",t:"实战篇 | 最佳实践总览",f:"58-实战篇-最佳实践总览.html"},
+{n:59,ch:"实战篇",t:"实战篇 | 如何系统学习 Tailwind CSS",f:"59-实战篇-如何系统学习-Tailwind-CSS.html"},
+{n:60,ch:"实战篇",t:"实战篇 | Clerk 与登录注册",f:"60-实战篇-Clerk-与登录注册.html"},
+{n:61,ch:"实战篇",t:"实战篇 | Crowdin 与本地化",f:"61-实战篇-Crowdin-与本地化.html"},
+{n:62,ch:"实战篇",t:"实战篇 | Storybook 与 UI 开发",f:"62-实战篇-Storybook-与-UI-开发.html"},
+{n:63,ch:"实战篇",t:"实战篇 | Zod 与数据校验",f:"63-实战篇-Zod-与数据校验.html"},
+{n:64,ch:"实战篇",t:"实战篇 | Shadcn UI 与组件库",f:"64-实战篇-Shadcn-UI-与组件库.html"},
+{n:65,ch:"实战篇",t:"实战篇 | React Hook Form 与表单处理",f:"65-实战篇-React-Hook-Form-与表单处理.html"},
+{n:66,ch:"实战篇",t:"实战篇 | tRPC 与类型安全",f:"66-实战篇-tRPC-与类型安全.html"},
+{n:67,ch:"实战篇",t:"实战篇 | create-t3-app 与项目初始化",f:"67-实战篇-create-t3-app-与项目初始化.html"},
+{n:68,ch:"实战篇",t:"实战篇 | t3-app 实战 | 身份认证与主题切换",f:"68-实战篇-t3-app-实战-身份认证与主题切换.html"},
+{n:69,ch:"实战篇",t:"实战篇 | t3-app 实战 | 创建清单",f:"69-实战篇-t3-app-实战-创建清单.html"},
+{n:70,ch:"实战篇",t:"实战篇 | t3-app 实战 | 创建任务",f:"70-实战篇-t3-app-实战-创建任务.html"},
+{n:71,ch:"源码篇",t:"源码篇 | 手写 React SSR",f:"71-源码篇-手写-React-SSR.html"},
+{n:72,ch:"源码篇",t:"源码篇 | 手写 React SSG 和 ISR",f:"72-源码篇-手写-React-SSG-和-ISR.html"},
+{n:73,ch:"源码篇",t:"源码篇 | 手写 RSC（上）",f:"73-源码篇-手写-RSC-上.html"},
+{n:74,ch:"源码篇",t:"源码篇 | 手写 RSC（下）",f:"74-源码篇-手写-RSC-下.html"},
+{n:75,ch:"源码篇",t:"源码篇 | RSC 实现原理",f:"75-源码篇-RSC-实现原理.html"},
+{n:76,ch:"源码篇",t:"源码篇 | 实现 Streaming",f:"76-源码篇-实现-Streaming.html"},
+{n:77,ch:"源码篇",t:"源码篇 | 实现 Server Actions",f:"77-源码篇-实现-Server-Actions.html"},
+{n:78,ch:"源码篇",t:"源码篇 | 实现客户端组件",f:"78-源码篇-实现客户端组件.html"},
+{n:79,ch:"面试篇",t:"面试篇 | 五千字的面试技巧分享",f:"79-面试篇-五千字的面试技巧分享.html"},
+{n:80,ch:"面试篇",t:"面试篇 | 常见面试题及解析（1）",f:"80-面试篇-常见面试题及解析-1.html"},
+{n:81,ch:"面试篇",t:"面试篇 | 常见面试题及解析（2）",f:"81-面试篇-常见面试题及解析-2.html"},
+{n:82,ch:"面试篇",t:"番外篇 | 拓展阅读",f:"82-番外篇-拓展阅读.html"}
+];
+const CUR = document.body.dataset.currentFile;
+const CHAPTERS = ["基础篇","实战篇","源码篇","面试篇"];
+
+/* ===== 侧边栏整书目录 ===== */
+(function renderToc(){
+  const sb = document.getElementById("sidebar");
+  let html = '<div class="sgtit">本书目录 · 82 节<span></span></div>';
+  CHAPTERS.forEach(function(ch){
+    const items = BOOK_TOC.filter(function(e){return e.ch===ch;});
+    html += '<div class="sgrp"><div class="sgrp-h"><span>'+ch+'</span><span>'+items.length+' 节</span></div>';
+    items.forEach(function(e){
+      const on = (e.f===CUR) ? ' on' : '';
+      html += '<a class="slink'+on+'" href="../'+e.ch+'/'+e.f+'"><span class="n">'+String(e.n).padStart(2,"0")+'</span><span>'+e.t+'</span></a>';
+    });
+    html += '</div>';
+  });
+  sb.innerHTML = html;
+})();
+
+/* ===== 本节目录（页内锚点） ===== */
+(function buildInToc(){
+  const art = document.querySelector(".article");
+  if(!art) return;
+  let i = 0;
+  art.querySelectorAll("h2").forEach(function(h){ if(!h.id) h.id = "s"+(++i); });
+  const hs = art.querySelectorAll("h2[id]");
+  const nav = document.getElementById("inctoc");
+  if(hs.length===0){ if(nav) nav.remove(); return; }
+  const ol = nav.querySelector("ol");
+  hs.forEach(function(h){
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = "#"+h.id;
+    a.textContent = h.textContent.replace(/\s+/g," ").trim();
+    li.appendChild(a); ol.appendChild(li);
+  });
+})();
+
+/* ===== 代码高亮（单遍 tokenize，需在文档末尾执行） ===== */
+const HLRE = /(\/\*[\s\S]*?\*\/|\/\/[^\n]*|#![^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|while|do|switch|case|default|break|continue|new|class|extends|super|import|export|from|default|async|await|try|catch|finally|throw|typeof|instanceof|in|of|yield|static|get|set|void|delete|with|interface|type|enum|implements|public|private|protected|readonly|declare|module|satisfies|keyof|infer|unknown|never|any|string|number|boolean|object|symbol|bigint|null|undefined|true|false|this)\b|\b(\d[\d_]*(?:\.\d+)?(?:[eE][+-]?\d+)?)\b|([A-Za-z_$][\w$]*)(?=\s*\()/g;
+function hl(code){
+  const e = code.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return e.replace(HLRE, function(m,c,str,kw,num,fnc){
+    if(c) return '<span class="hl-c">'+c+'</span>';
+    if(str) return '<span class="hl-s">'+str+'</span>';
+    if(kw) return '<span class="hl-k">'+kw+'</span>';
+    if(num) return '<span class="hl-n">'+num+'</span>';
+    if(fnc) return '<span class="hl-f">'+fnc+'</span>';
+    return m;
+  });
+}
+document.querySelectorAll("pre.code code").forEach(function(c){ c.innerHTML = hl(c.textContent); });
+
+/* ===== 复制按钮 ===== */
+document.querySelectorAll(".codeblock").forEach(function(b){
+  const pre = b.querySelector("pre.code");
+  const btn = b.querySelector(".copybtn");
+  if(!pre || !btn) return;
+  btn.addEventListener("click", function(){
+    const txt = pre.innerText;
+    const done = function(){ btn.textContent = "已复制"; setTimeout(function(){ btn.textContent = "复制"; }, 1500); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done, function(){ fallbackCopy(txt); done(); });
+    } else { fallbackCopy(txt); done(); }
+  });
+});
+function fallbackCopy(t){
+  const ta = document.createElement("textarea");
+  ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); } catch(e){}
+  document.body.removeChild(ta);
+}
+
+/* ===== 展开/收起全部 ===== */
+document.getElementById("foldAll").addEventListener("click", function(){
+  const ds = document.querySelectorAll("details.box");
+  let allOpen = true;
+  ds.forEach(function(d){ if(!d.open) allOpen = false; });
+  ds.forEach(function(d){ d.open = !allOpen; });
+  this.textContent = allOpen ? "⤡" : "⤢";
+});
+
+/* ===== 移动端抽屉 ===== */
+const sb = document.getElementById("sidebar"), ov = document.getElementById("overlay");
+function openToc(){ sb.classList.add("open"); ov.classList.add("show"); document.body.style.overflow = "hidden"; }
+function closeToc(){ sb.classList.remove("open"); ov.classList.remove("show"); document.body.style.overflow = ""; }
+document.getElementById("tocToggle").addEventListener("click", function(){ sb.classList.contains("open") ? closeToc() : openToc(); });
+ov.addEventListener("click", closeToc);
+
+/* ===== 上一节 / 下一节 ===== */
+(function pager(){
+  const idx = BOOK_TOC.findIndex(function(e){ return e.f === CUR; });
+  if(idx < 0) return;
+  const prev = idx > 0 ? BOOK_TOC[idx-1] : null;
+  const next = idx < BOOK_TOC.length-1 ? BOOK_TOC[idx+1] : null;
+  const short = function(t){ const p = t.split("|"); return p[p.length-1].trim(); };
+  const pv = document.getElementById("pagerPrev");
+  const nx = document.getElementById("pagerNext");
+  if(prev){
+    pv.href = "../"+prev.ch+"/"+prev.f;
+    pv.querySelector(".dir").textContent = "上一节";
+    pv.querySelector(".tt").textContent = prev.n+" · "+short(prev.t);
+  }
+  if(next){
+    nx.href = "../"+next.ch+"/"+next.f;
+    nx.querySelector(".tt").textContent = next.n+" · "+short(next.t);
+  }
+})();
+
+/* ===== 回到顶部 ===== */
+const tt = document.getElementById("totop");
+window.addEventListener("scroll", function(){ tt.classList.toggle("show", window.scrollY > 420); }, {passive:true});
+tt.addEventListener("click", function(){ window.scrollTo({top:0, behavior:"smooth"}); });
+</script>
+</body>
+</html>

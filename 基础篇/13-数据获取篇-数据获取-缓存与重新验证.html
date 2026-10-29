@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 13 节 · 数据获取篇 | 数据获取、缓存与重新验证 — Next.js 开发指南</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b1220'/%3E%3Cpath d='M16 6l10 17.5H6z' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0a0f1a; --bg2:#0e1626; --panel:#111b2e; --panel2:#0c1424;
+  --line:#1e2a40; --line2:#2a3a55;
+  --text:#d9e2f1; --muted:#8b9bb8; --dim:#5f6e8c;
+  --accent:#38bdf8; --accent2:#a78bfa; --accent-dim:rgba(56,189,248,.13);
+  --ok:#34d399; --warn:#fbbf24; --err:#f87171;
+  --k:#c678dd; --s:#98c379; --c:#64748b; --fn:#61afef; --n:#d19a66;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.75;font-size:15px;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ===== 顶栏 ===== */
+.topbar{position:fixed;top:0;left:0;right:0;height:54px;z-index:50;display:flex;align-items:center;gap:12px;padding:0 12px;background:rgba(10,15,26,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14.5px;color:var(--text);text-decoration:none;min-width:0}
+.brand svg{flex:none}
+.brand .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar .right{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
+.iconbtn{width:40px;height:40px;border-radius:10px;border:1px solid var(--line2);background:transparent;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.iconbtn:hover{color:var(--text);border-color:var(--accent)}
+.badge{font-size:12px;border:1px solid var(--line2);padding:3px 11px;border-radius:999px;color:var(--muted);white-space:nowrap}
+@media(min-width:1024px){.iconbtn.tocbtn{display:none}}
+
+/* ===== 侧边栏（本书目录 TOC） ===== */
+.sidebar{position:fixed;top:54px;bottom:0;left:0;width:302px;background:var(--bg2);border-right:1px solid var(--line);overflow-y:auto;z-index:40;transform:translateX(-106%);transition:transform .24s ease;padding:14px 12px 50px}
+.sidebar.open{transform:none}
+@media(min-width:1024px){.sidebar{transform:none}.main{margin-left:302px}}
+.sgtit{font-size:12.5px;color:var(--dim);letter-spacing:.1em;padding:6px 10px 4px;text-transform:uppercase;display:flex;justify-content:space-between}
+.sgrp{margin:4px 0 16px}
+.sgrp-h{font-size:12.5px;letter-spacing:.06em;color:var(--dim);padding:8px 10px 6px;display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:6px}
+.slink{display:flex;gap:9px;align-items:baseline;padding:6px 10px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:13px;line-height:1.45}
+.slink:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.slink .n{flex:none;font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+.slink.on{background:var(--accent-dim);color:var(--accent)}
+.slink.on .n{color:var(--accent)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:35;opacity:0;pointer-events:none;transition:opacity .24s}
+.overlay.show{opacity:1;pointer-events:auto}
+
+/* ===== 正文 ===== */
+.main{padding-top:54px;min-height:100vh}
+.content{max-width:880px;margin:0 auto;padding:26px 18px 90px}
+@media(min-width:768px){.content{padding:40px 34px 110px}}
+.hero{padding:20px 0 20px;border-bottom:1px solid var(--line);margin-bottom:24px}
+.chip{display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.12em;color:var(--accent);border:1px solid var(--line2);border-radius:999px;padding:3px 12px;margin-bottom:14px}
+h1{font-size:clamp(1.5rem,4vw,2.1rem);line-height:1.35;letter-spacing:.01em;color:#f2f6fc}
+.sub{color:var(--muted);margin-top:10px;font-size:15px}
+.meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;font-size:12.5px;color:var(--dim);font-family:var(--mono)}
+
+.inctoc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin:0 0 30px}
+.inctoc h3{font-size:12.5px;color:var(--muted);letter-spacing:.08em;margin-bottom:10px}
+.inctoc ol{list-style:none;display:grid;gap:5px}
+.inctoc a{color:var(--accent);text-decoration:none;font-size:14px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inctoc a:hover{text-decoration:underline}
+
+.article{counter-reset:sec}
+.article h2{font-size:1.3rem;margin:3.2rem 0 1rem;padding-left:14px;border-left:3px solid var(--accent);counter-increment:sec;counter-reset:sub;scroll-margin-top:70px;color:#eef3fc}
+.article h2::before{content:counter(sec,decimal-leading-zero);font-family:var(--mono);font-size:.78em;color:var(--accent);margin-right:10px;vertical-align:2px}
+.article h3{font-size:1.07rem;margin:1.9rem 0 .75rem;counter-increment:sub;color:#e4ebf7;scroll-margin-top:70px}
+.article h3::before{content:counter(sec) "." counter(sub);font-family:var(--mono);font-size:.82em;color:var(--accent2);margin-right:10px}
+.article h4{font-size:.99rem;margin:1.4rem 0 .6rem;color:#dbe6f7}
+.article p{margin:0 0 1rem;color:var(--text)}
+.article ul,.article ol{margin:0 0 1.1rem 1.5em}
+.article li{margin:.35em 0}
+.article strong{color:#fff}
+.article em{color:var(--muted)}
+.article a{color:#7dd3fc;text-decoration:none;border-bottom:1px solid rgba(125,211,252,.35)}
+.article a:hover{border-bottom-color:#7dd3fc}
+code.inline{font-family:var(--mono);font-size:.88em;background:#111b2e;border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:#9ad6ff;white-space:nowrap}
+
+.tipq{border:1px solid var(--line2);border-left:3px solid var(--accent2);background:var(--panel);padding:12px 16px;border-radius:10px;margin:0 0 1.1rem;color:var(--muted)}
+
+/* ===== 折叠块 ===== */
+details.box{border:1px solid var(--line);border-radius:12px;background:var(--panel);margin:0 0 1rem;overflow:hidden}
+details.box>summary{cursor:pointer;padding:12px 16px;font-weight:600;font-size:14.5px;display:flex;align-items:center;gap:10px;list-style:none;user-select:none;min-height:46px}
+details.box>summary::-webkit-details-marker{display:none}
+details.box>summary::before{content:"";width:8px;height:8px;border-radius:2px;flex:none}
+details.box.note>summary::before{background:var(--accent)}
+details.box.tip>summary::before{background:var(--ok)}
+details.box.warn>summary::before{background:var(--warn)}
+details.box.best>summary::before{background:var(--accent2)}
+details.box .chev{margin-left:auto;color:var(--dim);font-size:12px;transition:transform .2s}
+details.box[open] .chev{transform:rotate(90deg)}
+details.box .bd{padding:2px 16px 14px;border-top:1px solid var(--line);padding-top:10px}
+details.box .bd p:last-child{margin-bottom:0}
+
+/* ===== 代码块 ===== */
+.codeblock{margin:0 0 1.2rem;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0b1220}
+.codehead{display:flex;align-items:center;gap:10px;padding:7px 14px;background:#0e1626;border-bottom:1px solid var(--line);font-size:12.5px}
+.filename{font-family:var(--mono);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.copybtn{margin-left:auto;background:none;border:1px solid var(--line2);color:var(--muted);border-radius:7px;padding:3px 12px;font-size:12px;cursor:pointer;min-height:28px;flex:none}
+.copybtn:hover{color:var(--text);border-color:var(--accent)}
+pre.code{padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.65;color:#c9d4e8;tab-size:2}
+pre.code code{font-family:inherit;background:none;color:inherit;padding:0;border:0;display:block}
+.hl-k{color:var(--k)} .hl-s{color:var(--s)} .hl-c{color:var(--c);font-style:italic} .hl-f{color:var(--fn)} .hl-n{color:var(--n)} .hl-t{color:#e06c75}
+
+/* ===== 表格 ===== */
+.tbl{width:100%;border-collapse:collapse;margin:0 0 1.3rem;font-size:13.5px;table-layout:fixed}
+.tbl th{background:#101a2c;color:#dbe6f7;font-weight:600;text-align:left;padding:9px 12px;border:1px solid var(--line2);font-size:13px}
+.tbl td{padding:8px 12px;border:1px solid var(--line);color:var(--text);vertical-align:top;word-break:break-word}
+.tbl tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+.tbl caption{caption-side:top;text-align:left;color:var(--muted);font-size:13px;padding-bottom:8px}
+
+/* ===== 流程图（机制示意） ===== */
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:1.1rem 0 1.3rem;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.fnode{flex:none;max-width:100%;padding:8px 14px;border:1px solid var(--accent);color:var(--accent);background:var(--accent-dim);border-radius:8px;font-size:13px;font-weight:600;text-align:center}
+.fnode.dim{border-color:var(--line2);color:var(--muted);background:none}
+.fnode.sm{font-size:12px;padding:5px 10px;font-weight:500}
+.farrow{flex:none;color:var(--dim);font-family:var(--mono);padding:0 2px}
+.flow.col{flex-direction:column;align-items:stretch}
+.flow.col .fnode{width:100%}
+.flow.col .farrow{text-align:center;padding:2px 0}
+
+/* ===== 参考链接 ===== */
+.sources{margin-top:3rem;border-top:1px solid var(--line);padding-top:1.4rem}
+.sources h2{margin-top:0}
+.sources ol{list-style:decimal;margin-left:1.5em}
+.sources li{margin:.55em 0;font-size:14px;color:var(--muted)}
+.sources li a{color:#7dd3fc;text-decoration:none}
+.sources li a:hover{text-decoration:underline}
+.tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;margin-right:7px;vertical-align:1px;border:1px solid var(--line2);color:var(--muted);letter-spacing:.04em}
+.tag.official{color:var(--ok);border-color:rgba(52,211,153,.42)}
+.tag.blog{color:var(--accent2);border-color:rgba(167,139,250,.42)}
+.tag.gh{color:var(--warn);border-color:rgba(251,191,36,.42)}
+
+/* ===== 上一节/下一节 ===== */
+.pager{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:3rem;border-top:1px solid var(--line);padding-top:1.3rem}
+.pager a{display:block;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;text-decoration:none;color:var(--text)}
+.pager a:hover{border-color:var(--accent)}
+.pager .dir{font-size:11.5px;color:var(--dim);letter-spacing:.08em}
+.pager .tt{font-size:14px;margin-top:4px;color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:640px){.pager{grid-template-columns:1fr}}
+
+.totop{position:fixed;right:18px;bottom:18px;width:42px;height:42px;border-radius:10px;background:var(--panel);border:1px solid var(--line2);color:var(--muted);cursor:pointer;z-index:30;opacity:0;pointer-events:none;transition:opacity .2s;font-size:15px}
+.totop.show{opacity:1;pointer-events:auto}
+.totop:hover{color:var(--text);border-color:var(--accent)}
+
+.foot{padding:24px 20px 70px;text-align:center;color:var(--dim);font-size:12.5px;border-top:1px solid var(--line);margin-top:1.5rem}
+.foot a{color:var(--muted)}
+</style>
+</head>
+<body data-current-file="13-数据获取篇-数据获取-缓存与重新验证.html">
+
+<header class="topbar">
+  <a class="brand" href="../../index.html" title="返回总目录">
+    <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 6l10 17.5H6z" fill="none" stroke="#38bdf8" stroke-width="2.4" stroke-linejoin="round"/></svg>
+    <span class="t">Next.js 开发指南 · 完整重制版</span>
+  </a>
+  <div class="right">
+    <span class="badge" id="chapBadge">基础篇</span>
+    <button class="iconbtn" id="foldAll" title="展开/收起全部折叠块">⤢</button>
+    <button class="iconbtn tocbtn" id="tocToggle" title="目录导航" aria-label="打开目录导航">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    </button>
+  </div>
+</header>
+
+<nav class="sidebar" id="sidebar" aria-label="本书目录"></nav>
+<div class="overlay" id="overlay"></div>
+
+<main class="main">
+  <article class="content">
+
+    <header class="hero">
+      <span class="chip">第 13 节 · 共 82 节</span>
+      <h1>数据获取篇 | 数据获取、缓存与重新验证</h1>
+      <p class="sub">本节讲 App Router 下服务端组件怎么取数、fetch 的缓存语义在 Next.js 15 后的关键变化、时间与按需两种重新验证方式，以及客户端组件何时该用 SWR / TanStack Query。</p>
+      <div class="meta"><span>篇章：基础篇</span><span>主题：数据获取</span><span>对应小册：第 13 节</span></div>
+    </header>
+
+    <nav class="inctoc" id="inctoc" aria-label="本节目录"><h3>本节目录</h3><ol></ol></nav>
+
+    <div class="article">
+      <h2>概念与背景</h2>
+      <p>在 Pages Router 时代，数据获取是「约定函数」：<code class="inline">getStaticProps</code>、<code class="inline">getServerSideProps</code> 在组件之外单独写。进入 App Router 之后，模型发生了根本变化：<strong>在 React Server Components（RSC）中，数据获取就是直接在组件里写异步函数</strong>——组件本身就是 <code class="inline">async function</code>，需要什么数据就在组件里 <code class="inline">await</code> 什么。Next.js 在这个模型之上，把<strong>缓存（Caching）</strong>与<strong>重新验证（Revalidation）</strong>做成了 fetch 原生语义的一部分。</p>
+      <p>本节回答三个问题：</p>
+      <ol>
+        <li>服务端组件里怎么取数？<code class="inline">fetch</code> 的缓存语义在 Next.js 15 后发生了什么变化？</li>
+        <li>什么时候数据会被缓存、什么时候每次都拿最新？怎么用 <code class="inline">next: { revalidate }</code>、<code class="inline">cache: 'no-store'</code> 控制？</li>
+        <li>数据变了之后怎么主动刷新缓存？客户端组件又该怎么取数？</li>
+      </ol>
+      <blockquote class="tipq">版本口径：本节以 <strong>Next.js 15+（App Router）</strong>行为为准。Next.js 15 起，<code class="inline">fetch</code> 请求<strong>默认不再被缓存</strong>（13/14 时代默认缓存）。下文凡是涉及默认行为的地方，都会同时标注 15 前后的差异。</blockquote>
+
+      <h2>服务端组件里取数：直接 await fetch</h2>
+      <p>App Router 中，<code class="inline">page.tsx</code>、<code class="inline">layout.tsx</code> 默认是服务端组件，可以直接写成 async 函数，在其中调用任何数据来源——原生 <code class="inline">fetch</code>、数据库客户端（如 Prisma）、第三方 SDK 均可。数据请求与渲染在同一个组件里完成，无需在父子组件间层层透传 props。</p>
+      <div class="codeblock">
+        <div class="codehead"><span class="filename">app/blog/page.tsx</span><button class="copybtn">复制</button></div>
+        <pre class="code"><code>// 默认就是服务端组件，无需 'use client'
+type Post = { id: number; title: string }
+
+export default async function BlogPage() {
+  // 直接 await fetch，请求发生在服务端
+  const res = await fetch('https://api.example.com/posts')
+  const posts: Post[] = await res.json()
+
+  return (
+    &lt;section&gt;
+      &lt;h1&gt;博客列表&lt;/h1&gt;
+      &lt;ul&gt;
+        {posts.map((p) =&gt; (
+          &lt;li key={p.id}&gt;{p.title}&lt;/li&gt;
+        ))}
+      &lt;/ul&gt;
+    &lt;/section&gt;
+  )
+}</code></pre>
+      </div>
+      <p>这种写法的好处：数据不经过浏览器，敏感密钥不会泄露给客户端；多个组件需要同一份数据时，Next.js 会在一次渲染内自动去重（请求记忆，见第 14 节）；配合流式渲染（Streaming），还可以边请求边输出。</p>
+
+      <h2>fetch 的缓存语义（Next.js 15 口径）</h2>
+      <p>Next.js 扩展了原生 <code class="inline">fetch</code>，让每个请求可以自己声明「要不要被缓存、缓存多久」。<strong>最容易踩坑的是默认值</strong>，两个版本差别巨大：</p>
+      <table class="tbl">
+        <colgroup><col style="width:26%"><col style="width:37%"><col style="width:37%"></colgroup>
+        <caption>fetch 默认缓存行为的版本差异</caption>
+        <thead><tr><th>写法</th><th>Next.js 13 / 14</th><th>Next.js 15+</th></tr></thead>
+        <tbody>
+          <tr><td><code class="inline">fetch(url)</code> 不传任何选项</td><td>默认缓存（等价 force-cache）</td><td><strong>默认不缓存</strong>，每次请求都重新拉取</td></tr>
+          <tr><td><code class="inline">fetch(url, { cache: 'force-cache' })</code></td><td>缓存</td><td>缓存（显式 opt-in）</td></tr>
+          <tr><td><code class="inline">fetch(url, { next: { revalidate: 60 } })</code></td><td>缓存并 60 秒后重新验证</td><td>缓存并 60 秒后重新验证（语义不变）</td></tr>
+          <tr><td><code class="inline">fetch(url, { cache: 'no-store' })</code></td><td>不缓存</td><td>不缓存（语义不变）</td></tr>
+        </tbody>
+      </table>
+      <details class="box warn"><summary>常见坑：从 14 升到 15 后页面突然「每次都请求接口」<span class="chev">›</span></summary><div class="bd">
+        <p>Next.js 15 把「默认缓存」反转成了「默认不缓存」。如果你的项目升级后发现原本秒开的静态页现在每个请求都打外部接口，不是 bug，而是默认行为变了。需要恢复缓存的请求，请显式写 <code class="inline">fetch(url, { cache: 'force-cache' })</code>，或在布局/页面上 <code class="inline">export const fetchCache = 'default-cache'</code>（路由段配置，详见第 15 节）。</p>
+      </div></details>
+
+      <h3>cache 选项：手动开关</h3>
+      <div class="codeblock">
+        <div class="codehead"><span class="filename">app/lib/data.ts</span><button class="copybtn">复制</button></div>
+        <pre class="code"><code>// 1) 永远不缓存：每次请求都去数据源拿最新（适合库存、价格、登录态数据）
+export async function getLiveStock() {
+  const res = await fetch('https://api.example.com/stock', {
+    cache: 'no-store',
+  })
+  return res.json()
+}
+
+// 2) 显式缓存（Next.js 15+ 想进数据缓存必须这样写）
+export async function getArticle(id: string) {
+  const res = await fetch(`https://api.example.com/articles/${id}`, {
+    cache: 'force-cache',
+  })
+  return res.json()
+}
+
+// 3) 不缓存但告知浏览器与中间层也别用 HTTP 缓存（严格实时）
+export async function getNow() {
+  const res = await fetch('https://api.example.com/now', {
+    cache: 'no-cache',
+  })
+  return res.json()
+}</code></pre>
+      </div>
+
+      <h3>next: { revalidate }：基于时间的重新验证</h3>
+      <p>既想缓存、又不想数据永远定格，就用 <code class="inline">next: { revalidate: 秒数 }</code>：这正是增量静态再生成（Incremental Static Regeneration，ISR）在 fetch 层面的落地方式。语义是「这个数据最多缓存 N 秒；过期后下一次请求先返回旧数据，同时在后台静默刷新，刷新成功后替换缓存」，即 stale-while-revalidate 模型。</p>
+      <div class="codeblock">
+        <div class="codehead"><span class="filename">app/page.tsx</span><button class="copybtn">复制</button></div>
+        <pre class="code">// 首页热榜：最多缓存 60 秒
+const res = await fetch('https://api.example.com/top', {
+  next: { revalidate: 60 },
+})</code></pre>
+      </div>
+      <p>除了写在单个 fetch 上，也可以在路由段整体声明默认重新验证周期：</p>
+      <div class="codeblock">
+        <div class="codehead"><span class="filename">app/blog/layout.tsx</span><button class="copybtn">复制</button></div>
+        <pre class="code">// 该路由段内所有未单独设置 revalidate 的 fetch，默认 3600 秒重新验证一次
+export const revalidate = 3600</code></pre>
+      </div>
+      <details class="box note"><summary>注意：revalidate 是「下次有人访问时检查」的惰性机制<span class="chev">›</span></summary><div class="bd">
+        <p>revalidate 不是定时器。页面在 N 秒内无人访问时不会刷新；过期后必须有一次请求进来，才会触发后台重新生成。后台生成失败时，旧数据保持不变，不会把脏数据写进缓存。</p>
+      </div></details>
+
+      <h2>按需重新验证：revalidatePath 与 revalidateTag</h2>
+      <p>时间驱动的重新验证适合「容忍几分钟延迟」的数据；但博客评论被点赞、商品被下单之后，用户希望<strong>立刻</strong>看到最新结果。这时就需要按需重新验证（On-Demand Revalidation）：由一个事件（表单提交、Webhook）主动告诉 Next.js「把某块缓存作废」。两个入口都从 <code class="inline">next/cache</code> 导入：</p>
+      <ul>
+        <li><code class="inline">revalidatePath('/blog')</code>：按路由路径作废——该路径下的缓存数据与路由渲染结果一起失效。</li>
+        <li><code class="inline">revalidateTag('post')</code>：按标签作废——先在 fetch 上用 <code class="inline">next: { tags: ['post'] }</code> 打标签，之后一条 <code class="inline">revalidateTag('post')</code> 就能作废所有带这个标签的请求，不用关心它们散落在哪些页面。</li>
+      </ul>
+      <div class="codeblock">
+        <div class="codehead"><span class="filename">app/lib/data.ts</span><button class="copybtn">复制</button></div>
+        <pre class="code">// 取数时打标签
+export async function getPosts() {
+  const res = await fetch('https://api.example.com/posts', {
+    next: { tags: ['posts'] },
+  })
+  return res.json()
+}</code></pre>
+      </div>
+      <div class="codeblock">
+        <div class="codehead"><span class="filename">app/actions.ts</span><button class="copybtn">复制</button></div>
+        <pre class="code">'use server'
+import { revalidatePath, revalidateTag } from 'next/cache'
+
+// 数据变更后，主动作废缓存（典型场景是 Server Action，详见第 16/17 节）
+export async function createPost() {
+  // ...写入数据库...
+  revalidateTag('posts') // 作废所有打了 posts 标签的数据
+  revalidatePath('/blog') // 顺便重渲染 /blog 路由
+}</code></pre>
+      </div>
+      <p>两者的典型分工：<strong>用户操作后刷新当前页面</strong>→ 用 <code class="inline">revalidatePath</code>（放在 Server Action 里，会同时更新客户端路由缓存）；<strong>第三方 Webhook（如无头内容管理系统 CMS 发布文章）</strong>→ 用 <code class="inline">revalidateTag</code>（放在 Route Handler 里，按标签批量失效）。完整的触发位置差异在第 15 节展开。</p>
+
+      <h2>客户端组件里取数：SWR 与 TanStack Query</h2>
+      <p>不是所有数据都适合在服务端拉：用户交互中随时变化的局部数据（搜索联想、分页筛选、轮询）、需要在浏览器侧做缓存与重试逻辑的数据，更适合放在客户端组件中取。此时不再用 Next.js 的服务端缓存，而是用浏览器侧的数据请求库。</p>
+      <ul>
+        <li><strong>SWR</strong>（Stale-While-Revalidate， stale-while-revalidate 策略的 React 实现，由 Vercel 出品）：轻量，与 Next.js 同生态。</li>
+        <li><strong>TanStack Query</strong>（原 React Query）：功能更全，内置缓存、后台刷新、分页、乐观更新，生态更通用。</li>
+      </ul>
+      <div class="codeblock">
+        <div class="codehead"><span class="filename">app/components/SearchBox.tsx</span><button class="copybtn">复制</button></div>
+        <pre class="code">'use client'
+import useSWR from 'swr'
+
+const fetcher = (url: string) =&gt; fetch(url).then((r) =&gt; r.json())
+
+export function SearchBox({ keyword }: { keyword: string }) {
+  // SWR 自动处理：缓存、重新验证、错误重试、聚焦页面时刷新
+  const { data, error, isLoading } = useSWR(
+    keyword ? `/api/search?q=${keyword}` : null,
+    fetcher,
+  )
+
+  if (isLoading) return &lt;p&gt;加载中…&lt;/p&gt;
+  if (error) return &lt;p&gt;出错了&lt;/p&gt;
+  return &lt;ul&gt;{data.map((item: any) =&gt; &lt;li key={item.id}&gt;{item.title}&lt;/li&gt;)}&lt;/ul&gt;
+}</code></pre>
+      </div>
+      <table class="tbl">
+        <colgroup><col style="width:24%"><col style="width:38%"><col style="width:38%"></colgroup>
+        <caption>服务端取数 vs 客户端取数</caption>
+        <thead><tr><th>维度</th><th>服务端组件 fetch</th><th>客户端组件（SWR / TanStack Query）</th></tr></thead>
+        <tbody>
+          <tr><td>请求发生位置</td><td>服务器，浏览器看不到请求</td><td>浏览器，经过网络面板可见</td></tr>
+          <tr><td>缓存体系</td><td>Next.js 四层缓存（14/15 节）</td><td>库自身的内存缓存 + 重新验证策略</td></tr>
+          <tr><td>首屏</td><td>数据与 HTML 一起就绪，利于搜索引擎优化（Search Engine Optimization，SEO）</td><td>先渲染骨架再加载，首屏依赖 JavaScript</td></tr>
+          <tr><td>典型场景</td><td>页面主要内容、详情页、布局数据</td><td>交互密集的局部区块、搜索、轮询、无限列表</td></tr>
+        </tbody>
+      </table>
+
+      <h2>一个完整对比示例</h2>
+      <p>同一个页面：首屏文章列表在服务端拉（快、SEO 友好），「点赞数」这种随交互变化的数据在客户端拉（可随用户操作刷新）。</p>
+      <div class="codeblock">
+        <div class="codehead"><span class="filename">app/page.tsx（服务端组件）</span><button class="copybtn">复制</button></div>
+        <pre class="code">import { LikeButton } from './LikeButton'
+
+export default async function Page() {
+  // 服务端拉首屏数据：1 分钟重新验证一次
+  const res = await fetch('https://api.example.com/posts', {
+    next: { revalidate: 60 },
+  })
+  const posts = await res.json()
+
+  return (
+    &lt;main&gt;
+      {posts.map((p: any) =&gt; (
+        &lt;article key={p.id}&gt;
+          &lt;h2&gt;{p.title}&lt;/h2&gt;
+          {/* 客户端组件负责随交互变化的局部数据 */}
+          &lt;LikeButton postId={p.id} /&gt;
+        &lt;/article&gt;
+      ))}
+    &lt;/main&gt;
+  )
+}</code></pre>
+      </div>
+      <div class="codeblock">
+        <div class="codehead"><span class="filename">app/LikeButton.tsx（客户端组件）</span><button class="copybtn">复制</button></div>
+        <pre class="code">'use client'
+import useSWR from 'swr'
+
+export function LikeButton({ postId }: { postId: number }) {
+  // 客户端拉交互数据：聚焦页面时自动重新验证
+  const { data } = useSWR(`/api/likes/${postId}`)
+  return &lt;button&gt;❤ {data?.count ?? 0}&lt;/button&gt;
+}</code></pre>
+      </div>
+
+      <details class="box best"><summary>最佳实践：数据获取决策树<span class="chev">›</span></summary><div class="bd">
+        <ol>
+          <li>页面首屏需要、且对 SEO 重要的数据 → 服务端组件直接 <code class="inline">await fetch</code>。</li>
+          <li>数据不常变 → <code class="inline">next: { revalidate: N }</code>；从不重新拉 → <code class="inline">cache: 'force-cache'</code>；实时性要求高 → <code class="inline">cache: 'no-store'</code>。</li>
+          <li>写操作之后想立刻刷新 → 在 Server Action 里调 <code class="inline">revalidatePath</code> / <code class="inline">revalidateTag</code>。</li>
+          <li>局部交互数据（搜索、分页、点赞）→ 客户端组件 + SWR / TanStack Query。</li>
+          <li>从 14 升 15 后逐页检查：原本默认缓存的 fetch 是否需要显式补 <code class="inline">cache: 'force-cache'</code>。</li>
+        </ol>
+      </div></details>
+
+      <section class="sources">
+        <h2>参考链接</h2>
+        <ol>
+          <li><span class="tag official">官方</span><a href="https://nextjs.org/docs/app/guides/upgrading/version-15" target="_blank" rel="noopener">Next.js 15 升级指南：fetch 默认不再缓存（fetch requests are no longer cached by default）</a></li>
+          <li><span class="tag official">官方</span><a href="https://nextjs.org/docs/app/building-your-application/caching" target="_blank" rel="noopener">Caching and Revalidating：fetch 缓存选项、时间与按需重新验证</a></li>
+          <li><span class="tag official">官方</span><a href="https://nextjs.org/docs/app/api-reference/functions/revalidatePath" target="_blank" rel="noopener">revalidatePath API 参考</a></li>
+          <li><span class="tag official">官方</span><a href="https://nextjs.org/docs/app/api-reference/functions/revalidateTag" target="_blank" rel="noopener">revalidateTag API 参考</a></li>
+          <li><span class="tag official">官方</span><a href="https://swr.vercel.app/zh-CN" target="_blank" rel="noopener">SWR 官方文档（Vercel）</a></li>
+          <li><span class="tag official">官方</span><a href="https://tanstack.com/query/latest" target="_blank" rel="noopener">TanStack Query 官方文档</a></li>
+        </ol>
+      </section>
+
+      <nav class="pager">
+        <a id="pagerPrev" href="../../index.html"><span class="dir">上一节 / 总目录</span><span class="tt">总目录 · 教程首页</span></a>
+        <a id="pagerNext" href="#"><span class="dir">下一节</span><span class="tt"></span></a>
+      </nav>
+
+    </div>
+  </article>
+</main>
+
+<button class="totop" id="totop" aria-label="回到顶部">↑</button>
+<footer class="foot">Next.js 开发指南 · 完整重制版 —— 内容依据官方文档、社区博客与 GitHub 示例综合编写，仅供学习参考。来源链接见每节「参考链接」。</footer>
+
+<script>
+/* ===== 本书目录数据（82 节，与掘金小册《Next.js 开发指南》目录一致）===== */
+const BOOK_TOC = [
+{n:1,ch:"基础篇",t:"答疑篇 | 学习路线与答疑",f:"01-答疑篇-学习路线与答疑.html"},
+{n:2,ch:"基础篇",t:"初始篇 | Next.js CLI",f:"02-初始篇-Next.js-CLI.html"},
+{n:3,ch:"基础篇",t:"路由篇 | App Router",f:"03-路由篇-App-Router.html"},
+{n:4,ch:"基础篇",t:"路由篇 | 链接与导航",f:"04-路由篇-链接与导航.html"},
+{n:5,ch:"基础篇",t:"路由篇 | 动态路由、路由组、平行路由和拦截路由",f:"05-路由篇-动态路由-路由组-平行路由和拦截路由.html"},
+{n:6,ch:"基础篇",t:"路由篇 | 路由处理程序",f:"06-路由篇-路由处理程序.html"},
+{n:7,ch:"基础篇",t:"路由篇 | 中间件",f:"07-路由篇-中间件.html"},
+{n:8,ch:"基础篇",t:"渲染篇 | 从 CSR、SSR、SSG、ISR 开始说起",f:"08-渲染篇-从CSR-SSR-SSG-ISR开始说起.html"},
+{n:9,ch:"基础篇",t:"渲染篇 | React Server Component 与 SSR",f:"09-渲染篇-React-Server-Component-与-SSR.html"},
+{n:10,ch:"基础篇",t:"渲染篇 | Suspense 与 Streaming",f:"10-渲染篇-Suspense-与-Streaming.html"},
+{n:11,ch:"基础篇",t:"渲染篇 | 服务端组件和客户端组件",f:"11-渲染篇-服务端组件和客户端组件.html"},
+{n:12,ch:"基础篇",t:"渲染篇 | 服务端渲染策略",f:"12-渲染篇-服务端渲染策略.html"},
+{n:13,ch:"基础篇",t:"数据获取篇 | 数据获取、缓存与重新验证",f:"13-数据获取篇-数据获取-缓存与重新验证.html"},
+{n:14,ch:"基础篇",t:"缓存篇 | Caching（上）",f:"14-缓存篇-Caching-上.html"},
+{n:15,ch:"基础篇",t:"缓存篇 | Caching（下）",f:"15-缓存篇-Caching-下.html"},
+{n:16,ch:"基础篇",t:"数据获取篇 | Server Actions（上）",f:"16-数据获取篇-Server-Actions-上.html"},
+{n:17,ch:"基础篇",t:"数据获取篇 | Server Actions（下）",f:"17-数据获取篇-Server-Actions-下.html"},
+{n:18,ch:"基础篇",t:"样式篇 | Tailwind CSS、CSS-in-JS 与 Sass",f:"18-样式篇-Tailwind-CSS-CSS-in-JS-与-Sass.html"},
+{n:19,ch:"基础篇",t:"配置篇 | 环境变量、路径别名与 src 目录",f:"19-配置篇-环境变量-路径别名与-src-目录.html"},
+{n:20,ch:"基础篇",t:"配置篇 | 路由段配置项",f:"20-配置篇-路由段配置项.html"},
+{n:21,ch:"基础篇",t:"组件篇 | Images",f:"21-组件篇-Images.html"},
+{n:22,ch:"基础篇",t:"组件篇 | Font",f:"22-组件篇-Font.html"},
+{n:23,ch:"基础篇",t:"组件篇 | Link 和 Script",f:"23-组件篇-Link-和-Script.html"},
+{n:24,ch:"基础篇",t:"Metadata 篇 | 基于配置",f:"24-Metadata-篇-基于配置.html"},
+{n:25,ch:"基础篇",t:"Metadata 篇 | 基于文件",f:"25-Metadata-篇-基于文件.html"},
+{n:26,ch:"基础篇",t:"优化篇 | 懒加载",f:"26-优化篇-懒加载.html"},
+{n:27,ch:"基础篇",t:"渲染篇 | Edge Runtime",f:"27-渲染篇-Edge-Runtime.html"},
+{n:28,ch:"基础篇",t:"路由篇 | 国际化",f:"28-路由篇-国际化.html"},
+{n:29,ch:"基础篇",t:"配置篇 | TypeScript 和 ESLint",f:"29-配置篇-TypeScript-和-ESLint.html"},
+{n:30,ch:"基础篇",t:"配置篇 | MDX",f:"30-配置篇-MDX.html"},
+{n:31,ch:"基础篇",t:"配置篇 | 草稿模式和内容安全策略",f:"31-配置篇-草稿模式和内容安全策略.html"},
+{n:32,ch:"基础篇",t:"部署篇 | 静态导出",f:"32-部署篇-静态导出.html"},
+{n:33,ch:"基础篇",t:"API 篇 | next.config.js（上）",f:"33-API-篇-next-config-js-上.html"},
+{n:34,ch:"基础篇",t:"API 篇 | next.config.js（下）",f:"34-API-篇-next-config-js-下.html"},
+{n:35,ch:"基础篇",t:"API 篇 | 常用函数与方法（上）",f:"35-API-篇-常用函数与方法-上.html"},
+{n:36,ch:"基础篇",t:"API 篇 | 常用函数与方法（下）",f:"36-API-篇-常用函数与方法-下.html"},
+{n:37,ch:"实战篇",t:"实战篇 | React Notes | 项目介绍与创建",f:"37-实战篇-React-Notes-项目介绍与创建.html"},
+{n:38,ch:"实战篇",t:"实战篇 | React Notes | 侧边栏笔记列表",f:"38-实战篇-React-Notes-侧边栏笔记列表.html"},
+{n:39,ch:"实战篇",t:"实战篇 | React Notes | 笔记预览界面",f:"39-实战篇-React-Notes-笔记预览界面.html"},
+{n:40,ch:"实战篇",t:"实战篇 | React Notes | 笔记编辑界面",f:"40-实战篇-React-Notes-笔记编辑界面.html"},
+{n:41,ch:"实战篇",t:"实战篇 | React Notes | 笔记搜索",f:"41-实战篇-React-Notes-笔记搜索.html"},
+{n:42,ch:"实战篇",t:"实战篇 | React Notes | 国际化",f:"42-实战篇-React-Notes-国际化.html"},
+{n:43,ch:"实战篇",t:"实战篇 | React Notes | 文件上传",f:"43-实战篇-React-Notes-文件上传.html"},
+{n:44,ch:"实战篇",t:"实战篇 | React Notes | next-auth",f:"44-实战篇-React-Notes-next-auth.html"},
+{n:45,ch:"实战篇",t:"实战篇 | React Notes | Strapi",f:"45-实战篇-React-Notes-Strapi.html"},
+{n:46,ch:"实战篇",t:"实战篇 | React Notes | Prisma",f:"46-实战篇-React-Notes-Prisma.html"},
+{n:47,ch:"实战篇",t:"实战篇 | React Notes | 服务器部署",f:"47-实战篇-React-Notes-服务器部署.html"},
+{n:48,ch:"实战篇",t:"实战篇 | React Notes | Docker 快速入门",f:"48-实战篇-React-Notes-Docker-快速入门.html"},
+{n:49,ch:"实战篇",t:"实战篇 | React Notes | Docker 部署",f:"49-实战篇-React-Notes-Docker-部署.html"},
+{n:50,ch:"实战篇",t:"实战篇 | React Notes | Vercel 部署",f:"50-实战篇-React-Notes-Vercel-部署.html"},
+{n:51,ch:"实战篇",t:"实战篇 | 博客 | 快速实现",f:"51-实战篇-博客-快速实现.html"},
+{n:52,ch:"实战篇",t:"实战篇 | 博客 | Contentlayer",f:"52-实战篇-博客-Contentlayer.html"},
+{n:53,ch:"实战篇",t:"实战篇 | 博客 | SEO",f:"53-实战篇-博客-SEO.html"},
+{n:54,ch:"实战篇",t:"实战篇 | 博客 | 深色模式（Dark Mode）",f:"54-实战篇-博客-深色模式-Dark-Mode.html"},
+{n:55,ch:"实战篇",t:"实战篇 | 博客 | i18n",f:"55-实战篇-博客-i18n.html"},
+{n:56,ch:"实战篇",t:"实战篇 | 博客 | 性能分析",f:"56-实战篇-博客-性能分析.html"},
+{n:57,ch:"实战篇",t:"实战篇 | 博客 | 评论系统",f:"57-实战篇-博客-评论系统.html"},
+{n:58,ch:"实战篇",t:"实战篇 | 最佳实践总览",f:"58-实战篇-最佳实践总览.html"},
+{n:59,ch:"实战篇",t:"实战篇 | 如何系统学习 Tailwind CSS",f:"59-实战篇-如何系统学习-Tailwind-CSS.html"},
+{n:60,ch:"实战篇",t:"实战篇 | Clerk 与登录注册",f:"60-实战篇-Clerk-与登录注册.html"},
+{n:61,ch:"实战篇",t:"实战篇 | Crowdin 与本地化",f:"61-实战篇-Crowdin-与本地化.html"},
+{n:62,ch:"实战篇",t:"实战篇 | Storybook 与 UI 开发",f:"62-实战篇-Storybook-与-UI-开发.html"},
+{n:63,ch:"实战篇",t:"实战篇 | Zod 与数据校验",f:"63-实战篇-Zod-与数据校验.html"},
+{n:64,ch:"实战篇",t:"实战篇 | Shadcn UI 与组件库",f:"64-实战篇-Shadcn-UI-与组件库.html"},
+{n:65,ch:"实战篇",t:"实战篇 | React Hook Form 与表单处理",f:"65-实战篇-React-Hook-Form-与表单处理.html"},
+{n:66,ch:"实战篇",t:"实战篇 | tRPC 与类型安全",f:"66-实战篇-tRPC-与类型安全.html"},
+{n:67,ch:"实战篇",t:"实战篇 | create-t3-app 与项目初始化",f:"67-实战篇-create-t3-app-与项目初始化.html"},
+{n:68,ch:"实战篇",t:"实战篇 | t3-app 实战 | 身份认证与主题切换",f:"68-实战篇-t3-app-实战-身份认证与主题切换.html"},
+{n:69,ch:"实战篇",t:"实战篇 | t3-app 实战 | 创建清单",f:"69-实战篇-t3-app-实战-创建清单.html"},
+{n:70,ch:"实战篇",t:"实战篇 | t3-app 实战 | 创建任务",f:"70-实战篇-t3-app-实战-创建任务.html"},
+{n:71,ch:"源码篇",t:"源码篇 | 手写 React SSR",f:"71-源码篇-手写-React-SSR.html"},
+{n:72,ch:"源码篇",t:"源码篇 | 手写 React SSG 和 ISR",f:"72-源码篇-手写-React-SSG-和-ISR.html"},
+{n:73,ch:"源码篇",t:"源码篇 | 手写 RSC（上）",f:"73-源码篇-手写-RSC-上.html"},
+{n:74,ch:"源码篇",t:"源码篇 | 手写 RSC（下）",f:"74-源码篇-手写-RSC-下.html"},
+{n:75,ch:"源码篇",t:"源码篇 | RSC 实现原理",f:"75-源码篇-RSC-实现原理.html"},
+{n:76,ch:"源码篇",t:"源码篇 | 实现 Streaming",f:"76-源码篇-实现-Streaming.html"},
+{n:77,ch:"源码篇",t:"源码篇 | 实现 Server Actions",f:"77-源码篇-实现-Server-Actions.html"},
+{n:78,ch:"源码篇",t:"源码篇 | 实现客户端组件",f:"78-源码篇-实现客户端组件.html"},
+{n:79,ch:"面试篇",t:"面试篇 | 五千字的面试技巧分享",f:"79-面试篇-五千字的面试技巧分享.html"},
+{n:80,ch:"面试篇",t:"面试篇 | 常见面试题及解析（1）",f:"80-面试篇-常见面试题及解析-1.html"},
+{n:81,ch:"面试篇",t:"面试篇 | 常见面试题及解析（2）",f:"81-面试篇-常见面试题及解析-2.html"},
+{n:82,ch:"面试篇",t:"番外篇 | 拓展阅读",f:"82-番外篇-拓展阅读.html"}
+];
+const CUR = document.body.dataset.currentFile;
+const CHAPTERS = ["基础篇","实战篇","源码篇","面试篇"];
+
+/* ===== 侧边栏整书目录 ===== */
+(function renderToc(){
+  const sb = document.getElementById("sidebar");
+  let html = '<div class="sgtit">本书目录 · 82 节<span></span></div>';
+  CHAPTERS.forEach(function(ch){
+    const items = BOOK_TOC.filter(function(e){return e.ch===ch;});
+    html += '<div class="sgrp"><div class="sgrp-h"><span>'+ch+'</span><span>'+items.length+' 节</span></div>';
+    items.forEach(function(e){
+      const on = (e.f===CUR) ? ' on' : '';
+      html += '<a class="slink'+on+'" href="../'+e.ch+'/'+e.f+'"><span class="n">'+String(e.n).padStart(2,"0")+'</span><span>'+e.t+'</span></a>';
+    });
+    html += '</div>';
+  });
+  sb.innerHTML = html;
+})();
+
+/* ===== 本节目录（页内锚点） ===== */
+(function buildInToc(){
+  const art = document.querySelector(".article");
+  if(!art) return;
+  let i = 0;
+  art.querySelectorAll("h2").forEach(function(h){ if(!h.id) h.id = "s"+(++i); });
+  const hs = art.querySelectorAll("h2[id]");
+  const nav = document.getElementById("inctoc");
+  if(hs.length===0){ if(nav) nav.remove(); return; }
+  const ol = nav.querySelector("ol");
+  hs.forEach(function(h){
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = "#"+h.id;
+    a.textContent = h.textContent.replace(/\s+/g," ").trim();
+    li.appendChild(a); ol.appendChild(li);
+  });
+})();
+
+/* ===== 代码高亮（单遍 tokenize，需在文档末尾执行） ===== */
+const HLRE = /(\/\*[\s\S]*?\*\/|\/\/[^\n]*|#![^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|while|do|switch|case|default|break|continue|new|class|extends|super|import|export|from|default|async|await|try|catch|finally|throw|typeof|instanceof|in|of|yield|static|get|set|void|delete|with|interface|type|enum|implements|public|private|protected|readonly|declare|module|satisfies|keyof|infer|unknown|never|any|string|number|boolean|object|symbol|bigint|null|undefined|true|false|this)\b|\b(\d[\d_]*(?:\.\d+)?(?:[eE][+-]?\d+)?)\b|([A-Za-z_$][\w$]*)(?=\s*\()/g;
+function hl(code){
+  const e = code.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return e.replace(HLRE, function(m,c,str,kw,num,fnc){
+    if(c) return '<span class="hl-c">'+c+'</span>';
+    if(str) return '<span class="hl-s">'+str+'</span>';
+    if(kw) return '<span class="hl-k">'+kw+'</span>';
+    if(num) return '<span class="hl-n">'+num+'</span>';
+    if(fnc) return '<span class="hl-f">'+fnc+'</span>';
+    return m;
+  });
+}
+document.querySelectorAll("pre.code code").forEach(function(c){ c.innerHTML = hl(c.textContent); });
+
+/* ===== 复制按钮 ===== */
+document.querySelectorAll(".codeblock").forEach(function(b){
+  const pre = b.querySelector("pre.code");
+  const btn = b.querySelector(".copybtn");
+  if(!pre || !btn) return;
+  btn.addEventListener("click", function(){
+    const txt = pre.innerText;
+    const done = function(){ btn.textContent = "已复制"; setTimeout(function(){ btn.textContent = "复制"; }, 1500); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done, function(){ fallbackCopy(txt); done(); });
+    } else { fallbackCopy(txt); done(); }
+  });
+});
+function fallbackCopy(t){
+  const ta = document.createElement("textarea");
+  ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); } catch(e){}
+  document.body.removeChild(ta);
+}
+
+/* ===== 展开/收起全部 ===== */
+document.getElementById("foldAll").addEventListener("click", function(){
+  const ds = document.querySelectorAll("details.box");
+  let allOpen = true;
+  ds.forEach(function(d){ if(!d.open) allOpen = false; });
+  ds.forEach(function(d){ d.open = !allOpen; });
+  this.textContent = allOpen ? "⤡" : "⤢";
+});
+
+/* ===== 移动端抽屉 ===== */
+const sb = document.getElementById("sidebar"), ov = document.getElementById("overlay");
+function openToc(){ sb.classList.add("open"); ov.classList.add("show"); document.body.style.overflow = "hidden"; }
+function closeToc(){ sb.classList.remove("open"); ov.classList.remove("show"); document.body.style.overflow = ""; }
+document.getElementById("tocToggle").addEventListener("click", function(){ sb.classList.contains("open") ? closeToc() : openToc(); });
+ov.addEventListener("click", closeToc);
+
+/* ===== 上一节 / 下一节 ===== */
+(function pager(){
+  const idx = BOOK_TOC.findIndex(function(e){ return e.f === CUR; });
+  if(idx < 0) return;
+  const prev = idx > 0 ? BOOK_TOC[idx-1] : null;
+  const next = idx < BOOK_TOC.length-1 ? BOOK_TOC[idx+1] : null;
+  const short = function(t){ const p = t.split("|"); return p[p.length-1].trim(); };
+  const pv = document.getElementById("pagerPrev");
+  const nx = document.getElementById("pagerNext");
+  if(prev){
+    pv.href = "../"+prev.ch+"/"+prev.f;
+    pv.querySelector(".dir").textContent = "上一节";
+    pv.querySelector(".tt").textContent = prev.n+" · "+short(prev.t);
+  }
+  if(next){
+    nx.href = "../"+next.ch+"/"+next.f;
+    nx.querySelector(".tt").textContent = next.n+" · "+short(next.t);
+  }
+})();
+
+/* ===== 回到顶部 ===== */
+const tt = document.getElementById("totop");
+window.addEventListener("scroll", function(){ tt.classList.toggle("show", window.scrollY > 420); }, {passive:true});
+tt.addEventListener("click", function(){ window.scrollTo({top:0, behavior:"smooth"}); });
+</script>
+</body>
+</html>

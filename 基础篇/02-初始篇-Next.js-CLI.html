@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 02 节 · 初始篇 | Next.js CLI — Next.js 开发指南</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b1220'/%3E%3Cpath d='M16 6l10 17.5H6z' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0a0f1a; --bg2:#0e1626; --panel:#111b2e; --panel2:#0c1424;
+  --line:#1e2a40; --line2:#2a3a55;
+  --text:#d9e2f1; --muted:#8b9bb8; --dim:#5f6e8c;
+  --accent:#38bdf8; --accent2:#a78bfa; --accent-dim:rgba(56,189,248,.13);
+  --ok:#34d399; --warn:#fbbf24; --err:#f87171;
+  --k:#c678dd; --s:#98c379; --c:#64748b; --fn:#61afef; --n:#d19a66;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.75;font-size:15px;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ===== 顶栏 ===== */
+.topbar{position:fixed;top:0;left:0;right:0;height:54px;z-index:50;display:flex;align-items:center;gap:12px;padding:0 12px;background:rgba(10,15,26,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14.5px;color:var(--text);text-decoration:none;min-width:0}
+.brand svg{flex:none}
+.brand .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar .right{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
+.iconbtn{width:40px;height:40px;border-radius:10px;border:1px solid var(--line2);background:transparent;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.iconbtn:hover{color:var(--text);border-color:var(--accent)}
+.badge{font-size:12px;border:1px solid var(--line2);padding:3px 11px;border-radius:999px;color:var(--muted);white-space:nowrap}
+@media(min-width:1024px){.iconbtn.tocbtn{display:none}}
+
+/* ===== 侧边栏（本书目录 TOC） ===== */
+.sidebar{position:fixed;top:54px;bottom:0;left:0;width:302px;background:var(--bg2);border-right:1px solid var(--line);overflow-y:auto;z-index:40;transform:translateX(-106%);transition:transform .24s ease;padding:14px 12px 50px}
+.sidebar.open{transform:none}
+@media(min-width:1024px){.sidebar{transform:none}.main{margin-left:302px}}
+.sgtit{font-size:12.5px;color:var(--dim);letter-spacing:.1em;padding:6px 10px 4px;text-transform:uppercase;display:flex;justify-content:space-between}
+.sgrp{margin:4px 0 16px}
+.sgrp-h{font-size:12.5px;letter-spacing:.06em;color:var(--dim);padding:8px 10px 6px;display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:6px}
+.slink{display:flex;gap:9px;align-items:baseline;padding:6px 10px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:13px;line-height:1.45}
+.slink:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.slink .n{flex:none;font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+.slink.on{background:var(--accent-dim);color:var(--accent)}
+.slink.on .n{color:var(--accent)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:35;opacity:0;pointer-events:none;transition:opacity .24s}
+.overlay.show{opacity:1;pointer-events:auto}
+
+/* ===== 正文 ===== */
+.main{padding-top:54px;min-height:100vh}
+.content{max-width:880px;margin:0 auto;padding:26px 18px 90px}
+@media(min-width:768px){.content{padding:40px 34px 110px}}
+.hero{padding:20px 0 20px;border-bottom:1px solid var(--line);margin-bottom:24px}
+.chip{display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.12em;color:var(--accent);border:1px solid var(--line2);border-radius:999px;padding:3px 12px;margin-bottom:14px}
+h1{font-size:clamp(1.5rem,4vw,2.1rem);line-height:1.35;letter-spacing:.01em;color:#f2f6fc}
+.sub{color:var(--muted);margin-top:10px;font-size:15px}
+.meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;font-size:12.5px;color:var(--dim);font-family:var(--mono)}
+
+.inctoc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin:0 0 30px}
+.inctoc h3{font-size:12.5px;color:var(--muted);letter-spacing:.08em;margin-bottom:10px}
+.inctoc ol{list-style:none;display:grid;gap:5px}
+.inctoc a{color:var(--accent);text-decoration:none;font-size:14px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inctoc a:hover{text-decoration:underline}
+
+.article{counter-reset:sec}
+.article h2{font-size:1.3rem;margin:3.2rem 0 1rem;padding-left:14px;border-left:3px solid var(--accent);counter-increment:sec;counter-reset:sub;scroll-margin-top:70px;color:#eef3fc}
+.article h2::before{content:counter(sec,decimal-leading-zero);font-family:var(--mono);font-size:.78em;color:var(--accent);margin-right:10px;vertical-align:2px}
+.article h3{font-size:1.07rem;margin:1.9rem 0 .75rem;counter-increment:sub;color:#e4ebf7;scroll-margin-top:70px}
+.article h3::before{content:counter(sec) "." counter(sub);font-family:var(--mono);font-size:.82em;color:var(--accent2);margin-right:10px}
+.article h4{font-size:.99rem;margin:1.4rem 0 .6rem;color:#dbe6f7}
+.article p{margin:0 0 1rem;color:var(--text)}
+.article ul,.article ol{margin:0 0 1.1rem 1.5em}
+.article li{margin:.35em 0}
+.article strong{color:#fff}
+.article em{color:var(--muted)}
+.article a{color:#7dd3fc;text-decoration:none;border-bottom:1px solid rgba(125,211,252,.35)}
+.article a:hover{border-bottom-color:#7dd3fc}
+code.inline{font-family:var(--mono);font-size:.88em;background:#111b2e;border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:#9ad6ff;white-space:nowrap}
+
+.tipq{border:1px solid var(--line2);border-left:3px solid var(--accent2);background:var(--panel);padding:12px 16px;border-radius:10px;margin:0 0 1.1rem;color:var(--muted)}
+
+/* ===== 折叠块 ===== */
+details.box{border:1px solid var(--line);border-radius:12px;background:var(--panel);margin:0 0 1rem;overflow:hidden}
+details.box>summary{cursor:pointer;padding:12px 16px;font-weight:600;font-size:14.5px;display:flex;align-items:center;gap:10px;list-style:none;user-select:none;min-height:46px}
+details.box>summary::-webkit-details-marker{display:none}
+details.box>summary::before{content:"";width:8px;height:8px;border-radius:2px;flex:none}
+details.box.note>summary::before{background:var(--accent)}
+details.box.tip>summary::before{background:var(--ok)}
+details.box.warn>summary::before{background:var(--warn)}
+details.box.best>summary::before{background:var(--accent2)}
+details.box .chev{margin-left:auto;color:var(--dim);font-size:12px;transition:transform .2s}
+details.box[open] .chev{transform:rotate(90deg)}
+details.box .bd{padding:2px 16px 14px;border-top:1px solid var(--line);padding-top:10px}
+details.box .bd p:last-child{margin-bottom:0}
+
+/* ===== 代码块 ===== */
+.codeblock{margin:0 0 1.2rem;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0b1220}
+.codehead{display:flex;align-items:center;gap:10px;padding:7px 14px;background:#0e1626;border-bottom:1px solid var(--line);font-size:12.5px}
+.filename{font-family:var(--mono);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.copybtn{margin-left:auto;background:none;border:1px solid var(--line2);color:var(--muted);border-radius:7px;padding:3px 12px;font-size:12px;cursor:pointer;min-height:28px;flex:none}
+.copybtn:hover{color:var(--text);border-color:var(--accent)}
+pre.code{padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.65;color:#c9d4e8;tab-size:2}
+pre.code code{font-family:inherit;background:none;color:inherit;padding:0;border:0;display:block}
+.hl-k{color:var(--k)} .hl-s{color:var(--s)} .hl-c{color:var(--c);font-style:italic} .hl-f{color:var(--fn)} .hl-n{color:var(--n)} .hl-t{color:#e06c75}
+
+/* ===== 表格 ===== */
+.tbl{width:100%;border-collapse:collapse;margin:0 0 1.3rem;font-size:13.5px;table-layout:fixed}
+.tbl th{background:#101a2c;color:#dbe6f7;font-weight:600;text-align:left;padding:9px 12px;border:1px solid var(--line2);font-size:13px}
+.tbl td{padding:8px 12px;border:1px solid var(--line);color:var(--text);vertical-align:top;word-break:break-word}
+.tbl tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+.tbl caption{caption-side:top;text-align:left;color:var(--muted);font-size:13px;padding-bottom:8px}
+
+/* ===== 流程图（机制示意） ===== */
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:1.1rem 0 1.3rem;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.fnode{flex:none;max-width:100%;padding:8px 14px;border:1px solid var(--accent);color:var(--accent);background:var(--accent-dim);border-radius:8px;font-size:13px;font-weight:600;text-align:center}
+.fnode.dim{border-color:var(--line2);color:var(--muted);background:none}
+.fnode.sm{font-size:12px;padding:5px 10px;font-weight:500}
+.farrow{flex:none;color:var(--dim);font-family:var(--mono);padding:0 2px}
+.flow.col{flex-direction:column;align-items:stretch}
+.flow.col .fnode{width:100%}
+.flow.col .farrow{text-align:center;padding:2px 0}
+
+/* ===== 参考链接 ===== */
+.sources{margin-top:3rem;border-top:1px solid var(--line);padding-top:1.4rem}
+.sources h2{margin-top:0}
+.sources ol{list-style:decimal;margin-left:1.5em}
+.sources li{margin:.55em 0;font-size:14px;color:var(--muted)}
+.sources li a{color:#7dd3fc;text-decoration:none}
+.sources li a:hover{text-decoration:underline}
+.tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;margin-right:7px;vertical-align:1px;border:1px solid var(--line2);color:var(--muted);letter-spacing:.04em}
+.tag.official{color:var(--ok);border-color:rgba(52,211,153,.42)}
+.tag.blog{color:var(--accent2);border-color:rgba(167,139,250,.42)}
+.tag.gh{color:var(--warn);border-color:rgba(251,191,36,.42)}
+
+/* ===== 上一节/下一节 ===== */
+.pager{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:3rem;border-top:1px solid var(--line);padding-top:1.3rem}
+.pager a{display:block;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;text-decoration:none;color:var(--text)}
+.pager a:hover{border-color:var(--accent)}
+.pager .dir{font-size:11.5px;color:var(--dim);letter-spacing:.08em}
+.pager .tt{font-size:14px;margin-top:4px;color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:640px){.pager{grid-template-columns:1fr}}
+
+.totop{position:fixed;right:18px;bottom:18px;width:42px;height:42px;border-radius:10px;background:var(--panel);border:1px solid var(--line2);color:var(--muted);cursor:pointer;z-index:30;opacity:0;pointer-events:none;transition:opacity .2s;font-size:15px}
+.totop.show{opacity:1;pointer-events:auto}
+.totop:hover{color:var(--text);border-color:var(--accent)}
+
+.foot{padding:24px 20px 70px;text-align:center;color:var(--dim);font-size:12.5px;border-top:1px solid var(--line);margin-top:1.5rem}
+.foot a{color:var(--muted)}
+</style>
+</head>
+<body data-current-file="02-初始篇-Next.js-CLI.html">
+
+<header class="topbar">
+  <a class="brand" href="../../index.html" title="返回总目录">
+    <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 6l10 17.5H6z" fill="none" stroke="#38bdf8" stroke-width="2.4" stroke-linejoin="round"/></svg>
+    <span class="t">Next.js 开发指南 · 完整重制版</span>
+  </a>
+  <div class="right">
+    <span class="badge" id="chapBadge">基础篇</span>
+    <button class="iconbtn" id="foldAll" title="展开/收起全部折叠块">⤢</button>
+    <button class="iconbtn tocbtn" id="tocToggle" title="目录导航" aria-label="打开目录导航">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    </button>
+  </div>
+</header>
+
+<nav class="sidebar" id="sidebar" aria-label="本书目录"></nav>
+<div class="overlay" id="overlay"></div>
+
+<main class="main">
+  <article class="content">
+
+    <header class="hero">
+      <span class="chip">第 02 节 · 共 82 节</span>
+      <h1>初始篇 | Next.js CLI</h1>
+      <p class="sub">从 create-next-app 到 next dev / build / start：用官方脚手架与命令行工具把项目跑起来。</p>
+      <div class="meta"><span>篇章：基础篇</span><span>主题：CLI 与脚手架</span><span>对应小册第 02 节</span></div>
+    </header>
+
+    <nav class="inctoc" id="inctoc" aria-label="本节目录"><h3>本节目录</h3><ol></ol></nav>
+
+    <div class="article">
+
+      <h2>概念与背景</h2>
+      <p><strong>Next.js CLI（Command Line Interface，命令行界面）</strong>是 Next.js 官方提供的一套命令行工具，它做两件事：一是通过 <code class="inline">create-next-app</code> 一行命令从零生成一个配置齐全的项目；二是在项目内部通过 <code class="inline">next dev</code> / <code class="inline">next build</code> / <code class="inline">next start</code> 完成本地开发、生产构建与线上启动。</p>
+      <p>为什么要用官方脚手架而不是手动建目录？脚手架替你把 TypeScript、ESLint（ECMAScript Linter）、Tailwind CSS、导入别名、Git 初始化、<code class="inline">.gitignore</code> 等约定一次配好，并且永远与当前官方文档同步。对新手而言，「先用脚手架跑通，再对照目录逐个文件理解约定」是成本最低的入门方式。</p>
+
+      <h3>两条命令路线</h3>
+      <ul>
+        <li><strong>创建项目：create-next-app</strong>——一个独立包，不需要全局安装，通过 npx / yarn / pnpm / bun 一次性执行。官方称它「零依赖（zero dependencies）」，初始化只需约一秒。</li>
+        <li><strong>项目内命令：next</strong>——项目安装 <code class="inline">next</code> 依赖后，通过 <code class="inline">package.json</code> 的 scripts 调用，负责开发服务器、构建与生产启动。</li>
+      </ul>
+
+      <h2>create-next-app：创建项目</h2>
+      <p>不带参数运行会进入交互式提问，逐项确认技术选型：</p>
+      <div class="codeblock">
+        <div class="codehead"><span class="filename">Terminal</span><button class="copybtn">复制</button></div>
+        <pre class="code"><code>npx create-next-app@latest
+# 随后依次提问：
+# ? What is your project named? my-app
+# ? Would you like to use TypeScript? No / Yes
+# ? Would you like to use ESLint? No / Yes
+# ? Would you like to use Tailwind CSS? No / Yes
+# ? Would you like your code inside a `src/` directory? No / Yes
+# ? Would you like to use App Router? (recommended) No / Yes
+# ? Would you like to use Turbopack for `next dev`? No / Yes
+# ? Would you like to customize the import alias (@/* by default)? No / Yes</code></pre>
+      </div>
+
+      <h3>非交互参数一览</h3>
+      <p>把参数写全即可跳过提问，适合团队统一模板与 CI/CD（Continuous Integration / Continuous Deployment）自动化：</p>
+      <table class="tbl">
+        <colgroup><col style="width:30%"><col style="width:50%"><col style="width:20%"></colgroup>
+        <caption>create-next-app 常用参数（以官方文档 --help 输出为准）</caption>
+        <thead><tr><th>参数</th><th>作用</th><th>默认</th></tr></thead>
+        <tbody>
+          <tr><td><code class="inline">--ts / --typescript</code></td><td>初始化为 TypeScript 项目</td><td>默认开启</td></tr>
+          <tr><td><code class="inline">--js / --javascript</code></td><td>初始化为 JavaScript 项目</td><td>—</td></tr>
+          <tr><td><code class="inline">--tailwind</code></td><td>集成 Tailwind CSS 配置</td><td>默认开启</td></tr>
+          <tr><td><code class="inline">--eslint</code></td><td>集成 ESLint</td><td>—</td></tr>
+          <tr><td><code class="inline">--app</code></td><td>使用 App Router 目录结构</td><td>—</td></tr>
+          <tr><td><code class="inline">--src-dir</code></td><td>把源码放入 <code class="inline">src/</code> 目录</td><td>—</td></tr>
+          <tr><td><code class="inline">--turbo</code></td><td><code class="inline">next dev</code> 默认使用 Turbopack 打包器</td><td>—</td></tr>
+          <tr><td><code class="inline">--import-alias &lt;alias&gt;</code></td><td>自定义导入别名</td><td><code class="inline">@/*</code></td></tr>
+          <tr><td><code class="inline">--use-npm / --use-pnpm / --use-yarn / --use-bun</code></td><td>显式指定包管理器</td><td>自动检测</td></tr>
+          <tr><td><code class="inline">-e, --example</code></td><td>从官方示例名或 GitHub URL 初始化项目</td><td>—</td></tr>
+          <tr><td><code class="inline">--empty</code></td><td>生成仅含最小骨架的空项目</td><td>—</td></tr>
+          <tr><td><code class="inline">--skip-install</code></td><td>跳过依赖安装</td><td>—</td></tr>
+          <tr><td><code class="inline">--yes</code></td><td>未显式指定的项全部沿用上次偏好或默认值</td><td>—</td></tr>
+        </tbody>
+      </table>
+      <p>在任一参数前加 <code class="inline">--no-</code> 前缀即可关闭它，例如 <code class="inline">--no-eslint</code>、<code class="inline">--no-src-dir</code>。完整参数列表随时可运行 <code class="inline">npx create-next-app@latest --help</code> 查看。</p>
+
+      <h3>一条命令创建项目（完整示例）</h3>
+      <div class="codeblock">
+        <div class="codehead"><span class="filename">Terminal</span><button class="copybtn">复制</button></div>
+        <pre class="code"><code># 创建一个 TypeScript + Tailwind + App Router + src 目录的项目
+npx create-next-app@latest my-blog \
+  --typescript --tailwind --eslint --app \
+  --src-dir --import-alias "@/*" --use-npm
+
+cd my-blog
+npm run dev
+# 浏览器打开 http://localhost:3000</code></pre>
+      </div>
+
+      <h3>脚手架生成的目录结构</h3>
+      <div class="codeblock">
+        <div class="codehead"><span class="filename">my-blog/</span><button class="copybtn">复制</button></div>
+        <pre class="code"><code>my-blog/
+├── app/                  # App Router：页面、布局、路由处理程序都放这里
+│   ├── layout.tsx        # 根布局：必须包含 &lt;html&gt; 与 &lt;body&gt;
+│   ├── page.tsx          # 首页（对应 URL /）
+│   ├── globals.css       # 全局样式
+│   └── favicon.ico
+├── public/               # 静态资源：原样托管，不经过打包
+├── next.config.ts        # Next.js 配置文件
+├── package.json
+├── tsconfig.json         # TypeScript 配置
+├── eslint.config.mjs
+└── README.md</code></pre>
+      </div>
+      <p>若创建时勾选了 <code class="inline">--src-dir</code>，<code class="inline">app/</code> 会移动到 <code class="inline">src/app/</code>；<code class="inline">public/</code> 与各类配置文件位置不变。</p>
+
+      <h2>package.json scripts</h2>
+      <p>官方脚手架生成的 scripts 大致如下，对应四个最常用命令：</p>
+      <div class="codeblock">
+        <div class="codehead"><span class="filename">package.json</span><button class="copybtn">复制</button></div>
+        <pre class="code"><code>{
+  "scripts": {
+    "dev": "next dev",      # 启动开发服务器（热更新 + 报错覆盖层）
+    "build": "next build",  # 生成优化后的生产构建
+    "start": "next start",  # 启动生产服务（必须先 build）
+    "lint": "next lint"      # 运行 ESLint
+  }
+}</code></pre>
+      </div>
+      <p>若创建时选择了 Turbopack，<code class="inline">dev</code> 脚本会是 <code class="inline">next dev --turbo</code>。日常开发就是 <code class="inline">npm run dev</code> 这一条命令。</p>
+
+      <h2>next 命令族</h2>
+      <table class="tbl">
+        <colgroup><col style="width:24%"><col style="width:46%"><col style="width:30%"></colgroup>
+        <caption>next 子命令速查</caption>
+        <thead><tr><th>命令</th><th>作用</th><th>典型场景</th></tr></thead>
+        <tbody>
+          <tr><td><code class="inline">next dev</code></td><td>开发模式启动，带热更新（Hot Module Replacement，HMR）与全屏报错覆盖层</td><td>日常本地开发</td></tr>
+          <tr><td><code class="inline">next build</code></td><td>生成优化后的生产构建，输出每条路由的体积报告</td><td>上线前构建</td></tr>
+          <tr><td><code class="inline">next start</code></td><td>以生产模式启动已构建的应用（必须先 build）</td><td>自托管部署</td></tr>
+          <tr><td><code class="inline">next lint</code></td><td>对 app / pages / components / lib / src 目录运行 ESLint</td><td>提交代码前检查</td></tr>
+          <tr><td><code class="inline">next info</code></td><td>打印操作系统、Node 与包管理器版本、next/react 版本等环境信息</td><td>向官方报 Issue 时粘贴</td></tr>
+          <tr><td><code class="inline">next telemetry</code></td><td>开启或关闭完全匿名的使用数据收集</td><td>隐私 opt-out</td></tr>
+        </tbody>
+      </table>
+      <p>不带子命令直接运行 <code class="inline">next</code> 等价于 <code class="inline">next dev</code>。</p>
+
+      <h3>next dev 常用参数</h3>
+      <ul>
+        <li><code class="inline">-p, --port &lt;port&gt;</code>：指定端口，默认 3000；也可以用环境变量 <code class="inline">PORT=4000 next dev</code>。</li>
+        <li><code class="inline">-H, --hostname &lt;host&gt;</code>：指定监听地址，默认 0.0.0.0，便于局域网内其他设备（如手机）访问本机页面。</li>
+        <li><code class="inline">--turbo</code>：使用 Turbopack（Webpack 的后继增量打包器）启动开发服务器，显著加快冷启动与热更新。</li>
+        <li><code class="inline">--experimental-https</code>：本地生成自签 HTTPS 证书，用于 webhook、OAuth（Open Authorization）回调等必须走 https 的本地调试。</li>
+      </ul>
+
+      <h3>next build 产物怎么读</h3>
+      <p>构建结束会打印一张路由表，告诉你每条路由的渲染方式与体积：</p>
+      <div class="codeblock">
+        <div class="codehead"><span class="filename">Terminal（next build 输出示例）</span><button class="copybtn">复制</button></div>
+        <pre class="code"><code>Route (app)                              Size      First Load JS
+┌ ○ /                                    5.3 kB    89.5 kB
+├ ○ /_not-found                          885 B     85.1 kB
+└ ƒ /api/items                           0 B       0 B
++ First Load JS shared by all           84.2 kB</code></pre>
+      </div>
+      <p>其中 <code class="inline">○</code> 表示静态预渲染（Static，构建时生成 HTML），<code class="inline">ƒ</code> 表示动态渲染（Dynamic，请求时在服务端渲染）。<strong>Size</strong> 是客户端导航到该路由需下载的资源体积，<strong>First Load JS</strong> 是从服务端直接访问该页需下载的 JavaScript 体积，两者均为 gzip 压缩后的数值；首载 JS 建议保持在绿色区间。</p>
+
+      <h3>next start / next info / next telemetry</h3>
+      <ul>
+        <li><code class="inline">next start -p 4000</code>：启动生产服务；注意它不能与 <code class="inline">output: 'standalone'</code> 或 <code class="inline">output: 'export'</code> 的配置搭配使用——standalone 模式用自带的 <code class="inline">server.js</code>，export 产出的是纯静态文件。</li>
+        <li><code class="inline">next info</code>：把操作系统平台 / 架构、Node、npm、pnpm、yarn 版本，以及 next / react / react-dom 版本打印出来；按官方指引把这段信息粘贴到 GitHub Issue 里，能显著提高问题定位效率。</li>
+        <li><code class="inline">next telemetry disable</code>：退出匿名遥测；<code class="inline">next telemetry enable</code>：重新开启。官方声明该收集完全匿名且可随时退出。</li>
+      </ul>
+
+      <details class="box warn"><summary>常见坑<span class="chev">›</span></summary><div class="bd">
+        <ul>
+          <li><strong>PORT 不能写在 .env 里</strong>：HTTP 服务器在任何应用代码（包括加载 .env）之前就启动了，读不到 .env 中的 PORT。换端口请用 <code class="inline">-p</code> 参数或 shell 环境变量。</li>
+          <li><strong>--turbo vs --turbopack</strong>：早期版本参数名为 <code class="inline">--turbopack</code>，新版文档统一为 <code class="inline">--turbo</code>；看老博客教程时务必核对 Next.js 版本号。</li>
+          <li><strong>npx 缓存旧脚手架</strong>：固定写法 <code class="inline">create-next-app@latest</code> 可尽量避免拉到旧版；遇到奇怪提问顺序时先怀疑版本缓存。</li>
+          <li><strong>Node 版本过低</strong>：Next.js 要求较新的 Node.js LTS（Long-Term Support，长期支持版），先 <code class="inline">node -v</code> 确认，过低会在 install 或 dev 阶段直接报错。</li>
+        </ul>
+      </div></details>
+
+      <details class="box best"><summary>最佳实践<span class="chev">›</span></summary><div class="bd">
+        <ol>
+          <li>团队项目把「一整条 create-next-app 命令」写进 README，避免新成员靠点击提问攒出不一致的项目结构。</li>
+          <li>日常开发一律加 <code class="inline">--turbo</code>；本地需要 webhook / OAuth 时用 <code class="inline">--experimental-https</code>，不要自己折腾证书。</li>
+          <li>生产环境跑 <code class="inline">next build && next start</code>（或容器镜像），永远不要用 <code class="inline">next dev</code> 上线。</li>
+          <li>首次跑通脚手架后，对照本节的目录结构逐文件阅读，比直接啃配置文档高效得多。</li>
+        </ol>
+      </div></details>
+
+
+
+
+      <section class="sources">
+        <h2>参考链接</h2>
+        <ol>
+          <li><span class="tag official">官方</span><a href="https://nextjs.org/docs/app/api-reference/create-next-app" target="_blank" rel="noopener">create-next-app 官方文档</a></li>
+          <li><span class="tag official">官方</span><a href="https://nextjs.org/docs/app/api-reference/next-cli" target="_blank" rel="noopener">Next.js CLI 官方文档（next dev / build / start / info / telemetry）</a></li>
+          <li><span class="tag gh">GitHub</span><a href="https://github.com/vercel/next.js/tree/canary/packages/create-next-app" target="_blank" rel="noopener">vercel/next.js 中 create-next-app 源码</a></li>
+          <li><span class="tag gh">GitHub</span><a href="https://github.com/vercel/next-learn" target="_blank" rel="noopener">vercel/next-learn 官方交互式教程配套仓库</a></li>
+          <li><span class="tag blog">博客</span><a href="https://juejin.cn/book/7307859898316881957" target="_blank" rel="noopener">掘金小册《Next.js 开发指南》（冴羽）—— 本教程目录来源</a></li>
+        </ol>
+      </section>
+
+      <nav class="pager">
+        <a id="pagerPrev" href="../../index.html"><span class="dir">上一节 / 总目录</span><span class="tt">总目录 · 教程首页</span></a>
+        <a id="pagerNext" href="#"><span class="dir">下一节</span><span class="tt"></span></a>
+      </nav>
+    </div>
+  </article>
+</main>
+
+<button class="totop" id="totop" aria-label="回到顶部">↑</button>
+<footer class="foot">Next.js 开发指南 · 完整重制版 —— 内容依据官方文档、社区博客与 GitHub 示例综合编写，仅供学习参考。来源链接见每节「参考链接」。</footer>
+
+<script>
+/* ===== 本书目录数据（82 节，与掘金小册《Next.js 开发指南》目录一致）===== */
+const BOOK_TOC = [
+{n:1,ch:"基础篇",t:"答疑篇 | 学习路线与答疑",f:"01-答疑篇-学习路线与答疑.html"},
+{n:2,ch:"基础篇",t:"初始篇 | Next.js CLI",f:"02-初始篇-Next.js-CLI.html"},
+{n:3,ch:"基础篇",t:"路由篇 | App Router",f:"03-路由篇-App-Router.html"},
+{n:4,ch:"基础篇",t:"路由篇 | 链接与导航",f:"04-路由篇-链接与导航.html"},
+{n:5,ch:"基础篇",t:"路由篇 | 动态路由、路由组、平行路由和拦截路由",f:"05-路由篇-动态路由-路由组-平行路由和拦截路由.html"},
+{n:6,ch:"基础篇",t:"路由篇 | 路由处理程序",f:"06-路由篇-路由处理程序.html"},
+{n:7,ch:"基础篇",t:"路由篇 | 中间件",f:"07-路由篇-中间件.html"},
+{n:8,ch:"基础篇",t:"渲染篇 | 从 CSR、SSR、SSG、ISR 开始说起",f:"08-渲染篇-从CSR-SSR-SSG-ISR开始说起.html"},
+{n:9,ch:"基础篇",t:"渲染篇 | React Server Component 与 SSR",f:"09-渲染篇-React-Server-Component-与-SSR.html"},
+{n:10,ch:"基础篇",t:"渲染篇 | Suspense 与 Streaming",f:"10-渲染篇-Suspense-与-Streaming.html"},
+{n:11,ch:"基础篇",t:"渲染篇 | 服务端组件和客户端组件",f:"11-渲染篇-服务端组件和客户端组件.html"},
+{n:12,ch:"基础篇",t:"渲染篇 | 服务端渲染策略",f:"12-渲染篇-服务端渲染策略.html"},
+{n:13,ch:"基础篇",t:"数据获取篇 | 数据获取、缓存与重新验证",f:"13-数据获取篇-数据获取-缓存与重新验证.html"},
+{n:14,ch:"基础篇",t:"缓存篇 | Caching（上）",f:"14-缓存篇-Caching-上.html"},
+{n:15,ch:"基础篇",t:"缓存篇 | Caching（下）",f:"15-缓存篇-Caching-下.html"},
+{n:16,ch:"基础篇",t:"数据获取篇 | Server Actions（上）",f:"16-数据获取篇-Server-Actions-上.html"},
+{n:17,ch:"基础篇",t:"数据获取篇 | Server Actions（下）",f:"17-数据获取篇-Server-Actions-下.html"},
+{n:18,ch:"基础篇",t:"样式篇 | Tailwind CSS、CSS-in-JS 与 Sass",f:"18-样式篇-Tailwind-CSS-CSS-in-JS-与-Sass.html"},
+{n:19,ch:"基础篇",t:"配置篇 | 环境变量、路径别名与 src 目录",f:"19-配置篇-环境变量-路径别名与-src-目录.html"},
+{n:20,ch:"基础篇",t:"配置篇 | 路由段配置项",f:"20-配置篇-路由段配置项.html"},
+{n:21,ch:"基础篇",t:"组件篇 | Images",f:"21-组件篇-Images.html"},
+{n:22,ch:"基础篇",t:"组件篇 | Font",f:"22-组件篇-Font.html"},
+{n:23,ch:"基础篇",t:"组件篇 | Link 和 Script",f:"23-组件篇-Link-和-Script.html"},
+{n:24,ch:"基础篇",t:"Metadata 篇 | 基于配置",f:"24-Metadata-篇-基于配置.html"},
+{n:25,ch:"基础篇",t:"Metadata 篇 | 基于文件",f:"25-Metadata-篇-基于文件.html"},
+{n:26,ch:"基础篇",t:"优化篇 | 懒加载",f:"26-优化篇-懒加载.html"},
+{n:27,ch:"基础篇",t:"渲染篇 | Edge Runtime",f:"27-渲染篇-Edge-Runtime.html"},
+{n:28,ch:"基础篇",t:"路由篇 | 国际化",f:"28-路由篇-国际化.html"},
+{n:29,ch:"基础篇",t:"配置篇 | TypeScript 和 ESLint",f:"29-配置篇-TypeScript-和-ESLint.html"},
+{n:30,ch:"基础篇",t:"配置篇 | MDX",f:"30-配置篇-MDX.html"},
+{n:31,ch:"基础篇",t:"配置篇 | 草稿模式和内容安全策略",f:"31-配置篇-草稿模式和内容安全策略.html"},
+{n:32,ch:"基础篇",t:"部署篇 | 静态导出",f:"32-部署篇-静态导出.html"},
+{n:33,ch:"基础篇",t:"API 篇 | next.config.js（上）",f:"33-API-篇-next-config-js-上.html"},
+{n:34,ch:"基础篇",t:"API 篇 | next.config.js（下）",f:"34-API-篇-next-config-js-下.html"},
+{n:35,ch:"基础篇",t:"API 篇 | 常用函数与方法（上）",f:"35-API-篇-常用函数与方法-上.html"},
+{n:36,ch:"基础篇",t:"API 篇 | 常用函数与方法（下）",f:"36-API-篇-常用函数与方法-下.html"},
+{n:37,ch:"实战篇",t:"实战篇 | React Notes | 项目介绍与创建",f:"37-实战篇-React-Notes-项目介绍与创建.html"},
+{n:38,ch:"实战篇",t:"实战篇 | React Notes | 侧边栏笔记列表",f:"38-实战篇-React-Notes-侧边栏笔记列表.html"},
+{n:39,ch:"实战篇",t:"实战篇 | React Notes | 笔记预览界面",f:"39-实战篇-React-Notes-笔记预览界面.html"},
+{n:40,ch:"实战篇",t:"实战篇 | React Notes | 笔记编辑界面",f:"40-实战篇-React-Notes-笔记编辑界面.html"},
+{n:41,ch:"实战篇",t:"实战篇 | React Notes | 笔记搜索",f:"41-实战篇-React-Notes-笔记搜索.html"},
+{n:42,ch:"实战篇",t:"实战篇 | React Notes | 国际化",f:"42-实战篇-React-Notes-国际化.html"},
+{n:43,ch:"实战篇",t:"实战篇 | React Notes | 文件上传",f:"43-实战篇-React-Notes-文件上传.html"},
+{n:44,ch:"实战篇",t:"实战篇 | React Notes | next-auth",f:"44-实战篇-React-Notes-next-auth.html"},
+{n:45,ch:"实战篇",t:"实战篇 | React Notes | Strapi",f:"45-实战篇-React-Notes-Strapi.html"},
+{n:46,ch:"实战篇",t:"实战篇 | React Notes | Prisma",f:"46-实战篇-React-Notes-Prisma.html"},
+{n:47,ch:"实战篇",t:"实战篇 | React Notes | 服务器部署",f:"47-实战篇-React-Notes-服务器部署.html"},
+{n:48,ch:"实战篇",t:"实战篇 | React Notes | Docker 快速入门",f:"48-实战篇-React-Notes-Docker-快速入门.html"},
+{n:49,ch:"实战篇",t:"实战篇 | React Notes | Docker 部署",f:"49-实战篇-React-Notes-Docker-部署.html"},
+{n:50,ch:"实战篇",t:"实战篇 | React Notes | Vercel 部署",f:"50-实战篇-React-Notes-Vercel-部署.html"},
+{n:51,ch:"实战篇",t:"实战篇 | 博客 | 快速实现",f:"51-实战篇-博客-快速实现.html"},
+{n:52,ch:"实战篇",t:"实战篇 | 博客 | Contentlayer",f:"52-实战篇-博客-Contentlayer.html"},
+{n:53,ch:"实战篇",t:"实战篇 | 博客 | SEO",f:"53-实战篇-博客-SEO.html"},
+{n:54,ch:"实战篇",t:"实战篇 | 博客 | 深色模式（Dark Mode）",f:"54-实战篇-博客-深色模式-Dark-Mode.html"},
+{n:55,ch:"实战篇",t:"实战篇 | 博客 | i18n",f:"55-实战篇-博客-i18n.html"},
+{n:56,ch:"实战篇",t:"实战篇 | 博客 | 性能分析",f:"56-实战篇-博客-性能分析.html"},
+{n:57,ch:"实战篇",t:"实战篇 | 博客 | 评论系统",f:"57-实战篇-博客-评论系统.html"},
+{n:58,ch:"实战篇",t:"实战篇 | 最佳实践总览",f:"58-实战篇-最佳实践总览.html"},
+{n:59,ch:"实战篇",t:"实战篇 | 如何系统学习 Tailwind CSS",f:"59-实战篇-如何系统学习-Tailwind-CSS.html"},
+{n:60,ch:"实战篇",t:"实战篇 | Clerk 与登录注册",f:"60-实战篇-Clerk-与登录注册.html"},
+{n:61,ch:"实战篇",t:"实战篇 | Crowdin 与本地化",f:"61-实战篇-Crowdin-与本地化.html"},
+{n:62,ch:"实战篇",t:"实战篇 | Storybook 与 UI 开发",f:"62-实战篇-Storybook-与-UI-开发.html"},
+{n:63,ch:"实战篇",t:"实战篇 | Zod 与数据校验",f:"63-实战篇-Zod-与数据校验.html"},
+{n:64,ch:"实战篇",t:"实战篇 | Shadcn UI 与组件库",f:"64-实战篇-Shadcn-UI-与组件库.html"},
+{n:65,ch:"实战篇",t:"实战篇 | React Hook Form 与表单处理",f:"65-实战篇-React-Hook-Form-与表单处理.html"},
+{n:66,ch:"实战篇",t:"实战篇 | tRPC 与类型安全",f:"66-实战篇-tRPC-与类型安全.html"},
+{n:67,ch:"实战篇",t:"实战篇 | create-t3-app 与项目初始化",f:"67-实战篇-create-t3-app-与项目初始化.html"},
+{n:68,ch:"实战篇",t:"实战篇 | t3-app 实战 | 身份认证与主题切换",f:"68-实战篇-t3-app-实战-身份认证与主题切换.html"},
+{n:69,ch:"实战篇",t:"实战篇 | t3-app 实战 | 创建清单",f:"69-实战篇-t3-app-实战-创建清单.html"},
+{n:70,ch:"实战篇",t:"实战篇 | t3-app 实战 | 创建任务",f:"70-实战篇-t3-app-实战-创建任务.html"},
+{n:71,ch:"源码篇",t:"源码篇 | 手写 React SSR",f:"71-源码篇-手写-React-SSR.html"},
+{n:72,ch:"源码篇",t:"源码篇 | 手写 React SSG 和 ISR",f:"72-源码篇-手写-React-SSG-和-ISR.html"},
+{n:73,ch:"源码篇",t:"源码篇 | 手写 RSC（上）",f:"73-源码篇-手写-RSC-上.html"},
+{n:74,ch:"源码篇",t:"源码篇 | 手写 RSC（下）",f:"74-源码篇-手写-RSC-下.html"},
+{n:75,ch:"源码篇",t:"源码篇 | RSC 实现原理",f:"75-源码篇-RSC-实现原理.html"},
+{n:76,ch:"源码篇",t:"源码篇 | 实现 Streaming",f:"76-源码篇-实现-Streaming.html"},
+{n:77,ch:"源码篇",t:"源码篇 | 实现 Server Actions",f:"77-源码篇-实现-Server-Actions.html"},
+{n:78,ch:"源码篇",t:"源码篇 | 实现客户端组件",f:"78-源码篇-实现客户端组件.html"},
+{n:79,ch:"面试篇",t:"面试篇 | 五千字的面试技巧分享",f:"79-面试篇-五千字的面试技巧分享.html"},
+{n:80,ch:"面试篇",t:"面试篇 | 常见面试题及解析（1）",f:"80-面试篇-常见面试题及解析-1.html"},
+{n:81,ch:"面试篇",t:"面试篇 | 常见面试题及解析（2）",f:"81-面试篇-常见面试题及解析-2.html"},
+{n:82,ch:"面试篇",t:"番外篇 | 拓展阅读",f:"82-番外篇-拓展阅读.html"}
+];
+const CUR = document.body.dataset.currentFile;
+const CHAPTERS = ["基础篇","实战篇","源码篇","面试篇"];
+
+/* ===== 侧边栏整书目录 ===== */
+(function renderToc(){
+  const sb = document.getElementById("sidebar");
+  let html = '<div class="sgtit">本书目录 · 82 节<span></span></div>';
+  CHAPTERS.forEach(function(ch){
+    const items = BOOK_TOC.filter(function(e){return e.ch===ch;});
+    html += '<div class="sgrp"><div class="sgrp-h"><span>'+ch+'</span><span>'+items.length+' 节</span></div>';
+    items.forEach(function(e){
+      const on = (e.f===CUR) ? ' on' : '';
+      html += '<a class="slink'+on+'" href="../'+e.ch+'/'+e.f+'"><span class="n">'+String(e.n).padStart(2,"0")+'</span><span>'+e.t+'</span></a>';
+    });
+    html += '</div>';
+  });
+  sb.innerHTML = html;
+})();
+
+/* ===== 本节目录（页内锚点） ===== */
+(function buildInToc(){
+  const art = document.querySelector(".article");
+  if(!art) return;
+  let i = 0;
+  art.querySelectorAll("h2").forEach(function(h){ if(!h.id) h.id = "s"+(++i); });
+  const hs = art.querySelectorAll("h2[id]");
+  const nav = document.getElementById("inctoc");
+  if(hs.length===0){ if(nav) nav.remove(); return; }
+  const ol = nav.querySelector("ol");
+  hs.forEach(function(h){
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = "#"+h.id;
+    a.textContent = h.textContent.replace(/\s+/g," ").trim();
+    li.appendChild(a); ol.appendChild(li);
+  });
+})();
+
+/* ===== 代码高亮（单遍 tokenize，需在文档末尾执行） ===== */
+const HLRE = /(\/\*[\s\S]*?\*\/|\/\/[^\n]*|#![^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(const|let|var|function|return|if|else|for|while|do|switch|case|default|break|continue|new|class|extends|super|import|export|from|default|async|await|try|catch|finally|throw|typeof|instanceof|in|of|yield|static|get|set|void|delete|with|interface|type|enum|implements|public|private|protected|readonly|declare|module|satisfies|keyof|infer|unknown|never|any|string|number|boolean|object|symbol|bigint|null|undefined|true|false|this)\b|\b(\d[\d_]*(?:\.\d+)?(?:[eE][+-]?\d+)?)\b|([A-Za-z_$][\w$]*)(?=\s*\()/g;
+function hl(code){
+  const e = code.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return e.replace(HLRE, function(m,c,str,kw,num,fnc){
+    if(c) return '<span class="hl-c">'+c+'</span>';
+    if(str) return '<span class="hl-s">'+str+'</span>';
+    if(kw) return '<span class="hl-k">'+kw+'</span>';
+    if(num) return '<span class="hl-n">'+num+'</span>';
+    if(fnc) return '<span class="hl-f">'+fnc+'</span>';
+    return m;
+  });
+}
+document.querySelectorAll("pre.code code").forEach(function(c){ c.innerHTML = hl(c.textContent); });
+
+/* ===== 复制按钮 ===== */
+document.querySelectorAll(".codeblock").forEach(function(b){
+  const pre = b.querySelector("pre.code");
+  const btn = b.querySelector(".copybtn");
+  if(!pre || !btn) return;
+  btn.addEventListener("click", function(){
+    const txt = pre.innerText;
+    const done = function(){ btn.textContent = "已复制"; setTimeout(function(){ btn.textContent = "复制"; }, 1500); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done, function(){ fallbackCopy(txt); done(); });
+    } else { fallbackCopy(txt); done(); }
+  });
+});
+function fallbackCopy(t){
+  const ta = document.createElement("textarea");
+  ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); } catch(e){}
+  document.body.removeChild(ta);
+}
+
+/* ===== 展开/收起全部 ===== */
+document.getElementById("foldAll").addEventListener("click", function(){
+  const ds = document.querySelectorAll("details.box");
+  let allOpen = true;
+  ds.forEach(function(d){ if(!d.open) allOpen = false; });
+  ds.forEach(function(d){ d.open = !allOpen; });
+  this.textContent = allOpen ? "⤡" : "⤢";
+});
+
+/* ===== 移动端抽屉 ===== */
+const sb = document.getElementById("sidebar"), ov = document.getElementById("overlay");
+function openToc(){ sb.classList.add("open"); ov.classList.add("show"); document.body.style.overflow = "hidden"; }
+function closeToc(){ sb.classList.remove("open"); ov.classList.remove("show"); document.body.style.overflow = ""; }
+document.getElementById("tocToggle").addEventListener("click", function(){ sb.classList.contains("open") ? closeToc() : openToc(); });
+ov.addEventListener("click", closeToc);
+
+/* ===== 上一节 / 下一节 ===== */
+(function pager(){
+  const idx = BOOK_TOC.findIndex(function(e){ return e.f === CUR; });
+  if(idx < 0) return;
+  const prev = idx > 0 ? BOOK_TOC[idx-1] : null;
+  const next = idx < BOOK_TOC.length-1 ? BOOK_TOC[idx+1] : null;
+  const short = function(t){ const p = t.split("|"); return p[p.length-1].trim(); };
+  const pv = document.getElementById("pagerPrev");
+  const nx = document.getElementById("pagerNext");
+  if(prev){
+    pv.href = "../"+prev.ch+"/"+prev.f;
+    pv.querySelector(".dir").textContent = "上一节";
+    pv.querySelector(".tt").textContent = prev.n+" · "+short(prev.t);
+  }
+  if(next){
+    nx.href = "../"+next.ch+"/"+next.f;
+    nx.querySelector(".tt").textContent = next.n+" · "+short(next.t);
+  }
+})();
+
+/* ===== 回到顶部 ===== */
+const tt = document.getElementById("totop");
+window.addEventListener("scroll", function(){ tt.classList.toggle("show", window.scrollY > 420); }, {passive:true});
+tt.addEventListener("click", function(){ window.scrollTo({top:0, behavior:"smooth"}); });
+</script>
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Next.js 开发指南 · 完整重制版 — 总目录（82 节）</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b1220'/%3E%3Cpath d='M16 6l10 17.5H6z' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0a0f1a; --bg2:#0e1626; --panel:#111b2e; --panel2:#0c1424;
+  --line:#1e2a40; --line2:#2a3a55;
+  --text:#d9e2f1; --muted:#8b9bb8; --dim:#5f6e8c;
+  --accent:#38bdf8; --accent2:#a78bfa; --accent-dim:rgba(56,189,248,.13);
+  --ok:#34d399; --warn:#fbbf24;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.75;font-size:15px;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.topbar{position:fixed;top:0;left:0;right:0;height:54px;z-index:20;display:flex;align-items:center;gap:12px;padding:0 14px;background:rgba(10,15,26,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14.5px;color:var(--text);text-decoration:none;min-width:0}
+.brand svg{flex:none}
+.topbar .right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.badge{font-size:12px;border:1px solid var(--line2);padding:3px 11px;border-radius:999px;color:var(--muted);white-space:nowrap}
+.main{padding-top:54px}
+.content{max-width:980px;margin:0 auto;padding:34px 20px 100px}
+@media(min-width:768px){.content{padding:48px 36px 120px}}
+.hero{padding:18px 0 26px;border-bottom:1px solid var(--line);margin-bottom:30px}
+.chip{display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.12em;color:var(--accent);border:1px solid var(--line2);border-radius:999px;padding:3px 12px;margin-bottom:14px}
+h1{font-size:clamp(1.55rem,4.4vw,2.3rem);line-height:1.32;color:#f2f6fc;letter-spacing:.01em}
+.sub{color:var(--muted);margin-top:12px;font-size:15px;max-width:70ch}
+.sub a{color:#7dd3fc}
+.how{display:grid;grid-template-columns:1fr;gap:10px;margin-top:22px}
+@media(min-width:768px){.how{grid-template-columns:1fr 1fr}}
+.how .item{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;font-size:13.5px;color:var(--muted)}
+.how .item b{color:var(--text)}
+.chap{margin:0 0 26px}
+.chap-h{display:flex;align-items:baseline;gap:12px;padding:14px 2px 10px;border-top:1px solid var(--line);margin-top:8px}
+.chap-h .cn{font-size:1.18rem;font-weight:700;color:#eef3fc}
+.chap-h .cd{font-size:12.5px;color:var(--dim);letter-spacing:.05em}
+.grid{display:grid;grid-template-columns:1fr;gap:8px}
+@media(min-width:640px){.grid{grid-template-columns:1fr 1fr}}
+.sec{display:flex;gap:11px;align-items:baseline;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:10px 14px;text-decoration:none;color:var(--text);transition:border-color .15s, background .15s}
+.sec:hover{border-color:var(--accent);background:var(--panel2)}
+.sec .n{flex:none;font-family:var(--mono);font-size:12px;color:var(--accent)}
+.sec .t{font-size:13.8px;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sec .gt{flex:none;margin-left:auto;color:var(--dim);font-size:14px}
+@media(max-width:640px){.sec .gt{display:none}}
+.foot{padding:26px 20px 70px;text-align:center;color:var(--dim);font-size:12.5px;border-top:1px solid var(--line)}
+.foot a{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 6l10 17.5H6z" fill="none" stroke="#38bdf8" stroke-width="2.4" stroke-linejoin="round"/></svg>
+    <span>Next.js 开发指南 · 完整重制版</span>
+  </div>
+  <div class="right"><span class="badge">总目录 · 82 节</span></div>
+</header>
+
+<main class="main">
+  <div class="content">
+    <header class="hero">
+      <span class="chip">学习教程 · 四篇章 · 82 节</span>
+      <h1>Next.js 开发指南 · 完整重制版</h1>
+      <p class="sub">本教程依据掘金小册《<a href="https://juejin.cn/book/7307859898316881957" target="_blank" rel="noopener">Next.js 开发指南</a>》（冴羽）的完整目录重新编写，每节结合官方文档（nextjs.org/docs）、官方 GitHub 示例与社区博客综合撰写，内容与目录一一对应。共 <strong>82 节</strong>，按「基础 → 实战 → 源码 → 面试」分为四大篇章。</p>
+      <div class="how">
+        <div class="item"><b>如何阅读：</b>每个小节都是独立 HTML 页面，页面左侧/抽屉内含整书 82 节目录导航（TOC），底部有上一节/下一节跳转，可逐节顺序阅读。</div>
+        <div class="item"><b>写作约定：</b>技术缩写首次出现均给出全称（如 React Server Components (RSC)）；每节末尾附真实参考来源（官方/博客/GitHub）；代码示例可运行。</div>
+      </div>
+    </header>
+
+    <div id="chapters"></div>
+  </div>
+</main>
+
+<footer class="foot">
+  Next.js 开发指南 · 完整重制版 —— 内容依据官方文档、社区博客与 GitHub 示例综合编写，仅供学习参考。来源链接见每节「参考链接」。<br>
+  <a href="https://juejin.cn/book/7307859898316881957" target="_blank" rel="noopener">掘金小册原文（付费）</a>
+</footer>
+
+<script>
+const BOOK = [
+{n:1,ch:"基础篇",t:"答疑篇 | 学习路线与答疑",f:"01-答疑篇-学习路线与答疑.html"},
+{n:2,ch:"基础篇",t:"初始篇 | Next.js CLI",f:"02-初始篇-Next.js-CLI.html"},
+{n:3,ch:"基础篇",t:"路由篇 | App Router",f:"03-路由篇-App-Router.html"},
+{n:4,ch:"基础篇",t:"路由篇 | 链接与导航",f:"04-路由篇-链接与导航.html"},
+{n:5,ch:"基础篇",t:"路由篇 | 动态路由、路由组、平行路由和拦截路由",f:"05-路由篇-动态路由-路由组-平行路由和拦截路由.html"},
+{n:6,ch:"基础篇",t:"路由篇 | 路由处理程序",f:"06-路由篇-路由处理程序.html"},
+{n:7,ch:"基础篇",t:"路由篇 | 中间件",f:"07-路由篇-中间件.html"},
+{n:8,ch:"基础篇",t:"渲染篇 | 从 CSR、SSR、SSG、ISR 开始说起",f:"08-渲染篇-从CSR-SSR-SSG-ISR开始说起.html"},
+{n:9,ch:"基础篇",t:"渲染篇 | React Server Component 与 SSR",f:"09-渲染篇-React-Server-Component-与-SSR.html"},
+{n:10,ch:"基础篇",t:"渲染篇 | Suspense 与 Streaming",f:"10-渲染篇-Suspense-与-Streaming.html"},
+{n:11,ch:"基础篇",t:"渲染篇 | 服务端组件和客户端组件",f:"11-渲染篇-服务端组件和客户端组件.html"},
+{n:12,ch:"基础篇",t:"渲染篇 | 服务端渲染策略",f:"12-渲染篇-服务端渲染策略.html"},
+{n:13,ch:"基础篇",t:"数据获取篇 | 数据获取、缓存与重新验证",f:"13-数据获取篇-数据获取-缓存与重新验证.html"},
+{n:14,ch:"基础篇",t:"缓存篇 | Caching（上）",f:"14-缓存篇-Caching-上.html"},
+{n:15,ch:"基础篇",t:"缓存篇 | Caching（下）",f:"15-缓存篇-Caching-下.html"},
+{n:16,ch:"基础篇",t:"数据获取篇 | Server Actions（上）",f:"16-数据获取篇-Server-Actions-上.html"},
+{n:17,ch:"基础篇",t:"数据获取篇 | Server Actions（下）",f:"17-数据获取篇-Server-Actions-下.html"},
+{n:18,ch:"基础篇",t:"样式篇 | Tailwind CSS、CSS-in-JS 与 Sass",f:"18-样式篇-Tailwind-CSS-CSS-in-JS-与-Sass.html"},
+{n:19,ch:"基础篇",t:"配置篇 | 环境变量、路径别名与 src 目录",f:"19-配置篇-环境变量-路径别名与-src-目录.html"},
+{n:20,ch:"基础篇",t:"配置篇 | 路由段配置项",f:"20-配置篇-路由段配置项.html"},
+{n:21,ch:"基础篇",t:"组件篇 | Images",f:"21-组件篇-Images.html"},
+{n:22,ch:"基础篇",t:"组件篇 | Font",f:"22-组件篇-Font.html"},
+{n:23,ch:"基础篇",t:"组件篇 | Link 和 Script",f:"23-组件篇-Link-和-Script.html"},
+{n:24,ch:"基础篇",t:"Metadata 篇 | 基于配置",f:"24-Metadata-篇-基于配置.html"},
+{n:25,ch:"基础篇",t:"Metadata 篇 | 基于文件",f:"25-Metadata-篇-基于文件.html"},
+{n:26,ch:"基础篇",t:"优化篇 | 懒加载",f:"26-优化篇-懒加载.html"},
+{n:27,ch:"基础篇",t:"渲染篇 | Edge Runtime",f:"27-渲染篇-Edge-Runtime.html"},
+{n:28,ch:"基础篇",t:"路由篇 | 国际化",f:"28-路由篇-国际化.html"},
+{n:29,ch:"基础篇",t:"配置篇 | TypeScript 和 ESLint",f:"29-配置篇-TypeScript-和-ESLint.html"},
+{n:30,ch:"基础篇",t:"配置篇 | MDX",f:"30-配置篇-MDX.html"},
+{n:31,ch:"基础篇",t:"配置篇 | 草稿模式和内容安全策略",f:"31-配置篇-草稿模式和内容安全策略.html"},
+{n:32,ch:"基础篇",t:"部署篇 | 静态导出",f:"32-部署篇-静态导出.html"},
+{n:33,ch:"基础篇",t:"API 篇 | next.config.js（上）",f:"33-API-篇-next-config-js-上.html"},
+{n:34,ch:"基础篇",t:"API 篇 | next.config.js（下）",f:"34-API-篇-next-config-js-下.html"},
+{n:35,ch:"基础篇",t:"API 篇 | 常用函数与方法（上）",f:"35-API-篇-常用函数与方法-上.html"},
+{n:36,ch:"基础篇",t:"API 篇 | 常用函数与方法（下）",f:"36-API-篇-常用函数与方法-下.html"},
+{n:37,ch:"实战篇",t:"实战篇 | React Notes | 项目介绍与创建",f:"37-实战篇-React-Notes-项目介绍与创建.html"},
+{n:38,ch:"实战篇",t:"实战篇 | React Notes | 侧边栏笔记列表",f:"38-实战篇-React-Notes-侧边栏笔记列表.html"},
+{n:39,ch:"实战篇",t:"实战篇 | React Notes | 笔记预览界面",f:"39-实战篇-React-Notes-笔记预览界面.html"},
+{n:40,ch:"实战篇",t:"实战篇 | React Notes | 笔记编辑界面",f:"40-实战篇-React-Notes-笔记编辑界面.html"},
+{n:41,ch:"实战篇",t:"实战篇 | React Notes | 笔记搜索",f:"41-实战篇-React-Notes-笔记搜索.html"},
+{n:42,ch:"实战篇",t:"实战篇 | React Notes | 国际化",f:"42-实战篇-React-Notes-国际化.html"},
+{n:43,ch:"实战篇",t:"实战篇 | React Notes | 文件上传",f:"43-实战篇-React-Notes-文件上传.html"},
+{n:44,ch:"实战篇",t:"实战篇 | React Notes | next-auth",f:"44-实战篇-React-Notes-next-auth.html"},
+{n:45,ch:"实战篇",t:"实战篇 | React Notes | Strapi",f:"45-实战篇-React-Notes-Strapi.html"},
+{n:46,ch:"实战篇",t:"实战篇 | React Notes | Prisma",f:"46-实战篇-React-Notes-Prisma.html"},
+{n:47,ch:"实战篇",t:"实战篇 | React Notes | 服务器部署",f:"47-实战篇-React-Notes-服务器部署.html"},
+{n:48,ch:"实战篇",t:"实战篇 | React Notes | Docker 快速入门",f:"48-实战篇-React-Notes-Docker-快速入门.html"},
+{n:49,ch:"实战篇",t:"实战篇 | React Notes | Docker 部署",f:"49-实战篇-React-Notes-Docker-部署.html"},
+{n:50,ch:"实战篇",t:"实战篇 | React Notes | Vercel 部署",f:"50-实战篇-React-Notes-Vercel-部署.html"},
+{n:51,ch:"实战篇",t:"实战篇 | 博客 | 快速实现",f:"51-实战篇-博客-快速实现.html"},
+{n:52,ch:"实战篇",t:"实战篇 | 博客 | Contentlayer",f:"52-实战篇-博客-Contentlayer.html"},
+{n:53,ch:"实战篇",t:"实战篇 | 博客 | SEO",f:"53-实战篇-博客-SEO.html"},
+{n:54,ch:"实战篇",t:"实战篇 | 博客 | 深色模式（Dark Mode）",f:"54-实战篇-博客-深色模式-Dark-Mode.html"},
+{n:55,ch:"实战篇",t:"实战篇 | 博客 | i18n",f:"55-实战篇-博客-i18n.html"},
+{n:56,ch:"实战篇",t:"实战篇 | 博客 | 性能分析",f:"56-实战篇-博客-性能分析.html"},
+{n:57,ch:"实战篇",t:"实战篇 | 博客 | 评论系统",f:"57-实战篇-博客-评论系统.html"},
+{n:58,ch:"实战篇",t:"实战篇 | 最佳实践总览",f:"58-实战篇-最佳实践总览.html"},
+{n:59,ch:"实战篇",t:"实战篇 | 如何系统学习 Tailwind CSS",f:"59-实战篇-如何系统学习-Tailwind-CSS.html"},
+{n:60,ch:"实战篇",t:"实战篇 | Clerk 与登录注册",f:"60-实战篇-Clerk-与登录注册.html"},
+{n:61,ch:"实战篇",t:"实战篇 | Crowdin 与本地化",f:"61-实战篇-Crowdin-与本地化.html"},
+{n:62,ch:"实战篇",t:"实战篇 | Storybook 与 UI 开发",f:"62-实战篇-Storybook-与-UI-开发.html"},
+{n:63,ch:"实战篇",t:"实战篇 | Zod 与数据校验",f:"63-实战篇-Zod-与数据校验.html"},
+{n:64,ch:"实战篇",t:"实战篇 | Shadcn UI 与组件库",f:"64-实战篇-Shadcn-UI-与组件库.html"},
+{n:65,ch:"实战篇",t:"实战篇 | React Hook Form 与表单处理",f:"65-实战篇-React-Hook-Form-与表单处理.html"},
+{n:66,ch:"实战篇",t:"实战篇 | tRPC 与类型安全",f:"66-实战篇-tRPC-与类型安全.html"},
+{n:67,ch:"实战篇",t:"实战篇 | create-t3-app 与项目初始化",f:"67-实战篇-create-t3-app-与项目初始化.html"},
+{n:68,ch:"实战篇",t:"实战篇 | t3-app 实战 | 身份认证与主题切换",f:"68-实战篇-t3-app-实战-身份认证与主题切换.html"},
+{n:69,ch:"实战篇",t:"实战篇 | t3-app 实战 | 创建清单",f:"69-实战篇-t3-app-实战-创建清单.html"},
+{n:70,ch:"实战篇",t:"实战篇 | t3-app 实战 | 创建任务",f:"70-实战篇-t3-app-实战-创建任务.html"},
+{n:71,ch:"源码篇",t:"源码篇 | 手写 React SSR",f:"71-源码篇-手写-React-SSR.html"},
+{n:72,ch:"源码篇",t:"源码篇 | 手写 React SSG 和 ISR",f:"72-源码篇-手写-React-SSG-和-ISR.html"},
+{n:73,ch:"源码篇",t:"源码篇 | 手写 RSC（上）",f:"73-源码篇-手写-RSC-上.html"},
+{n:74,ch:"源码篇",t:"源码篇 | 手写 RSC（下）",f:"74-源码篇-手写-RSC-下.html"},
+{n:75,ch:"源码篇",t:"源码篇 | RSC 实现原理",f:"75-源码篇-RSC-实现原理.html"},
+{n:76,ch:"源码篇",t:"源码篇 | 实现 Streaming",f:"76-源码篇-实现-Streaming.html"},
+{n:77,ch:"源码篇",t:"源码篇 | 实现 Server Actions",f:"77-源码篇-实现-Server-Actions.html"},
+{n:78,ch:"源码篇",t:"源码篇 | 实现客户端组件",f:"78-源码篇-实现客户端组件.html"},
+{n:79,ch:"面试篇",t:"面试篇 | 五千字的面试技巧分享",f:"79-面试篇-五千字的面试技巧分享.html"},
+{n:80,ch:"面试篇",t:"面试篇 | 常见面试题及解析（1）",f:"80-面试篇-常见面试题及解析-1.html"},
+{n:81,ch:"面试篇",t:"面试篇 | 常见面试题及解析（2）",f:"81-面试篇-常见面试题及解析-2.html"},
+{n:82,ch:"面试篇",t:"番外篇 | 拓展阅读",f:"82-番外篇-拓展阅读.html"}
+];
+const DESC = {
+"基础篇":"第 1-36 节：路由、渲染、数据获取、缓存、Server Actions、样式、组件、Metadata、配置与 API。构建 Next.js 完整心智模型。",
+"实战篇":"第 37-70 节：React Notes 笔记应用、博客系统、工具链（Clerk、Prisma、tRPC、Storybook、Zod 等）与 t3-app 实战。",
+"源码篇":"第 71-78 节：手写 SSR、SSG、ISR、RSC、Streaming 与 Server Actions，理解框架底层原理。",
+"面试篇":"第 79-82 节：面试技巧、高频真题解析与拓展阅读清单。"
+};
+const order = ["基础篇","实战篇","源码篇","面试篇"];
+const wrap = document.getElementById("chapters");
+order.forEach(function(ch){
+  const items = BOOK.filter(function(e){return e.ch===ch;});
+  let html = '<section class="chap"><div class="chap-h"><span class="cn">'+ch+'</span><span class="cd">'+items.length+' 节 · '+DESC[ch]+'</span></div><div class="grid">';
+  items.forEach(function(e){
+    html += '<a class="sec" href="'+ch+'/'+e.f+'"><span class="n">'+String(e.n).padStart(2,"0")+'</span><span class="t">'+e.t+'</span><span class="gt">→</span></a>';
+  });
+  html += '</div></section>';
+  wrap.innerHTML += html;
+});
+</script>
+</body>
+</html>
